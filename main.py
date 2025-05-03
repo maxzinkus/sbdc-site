@@ -1,14 +1,22 @@
-# basic flask app
-from flask import Flask, render_template
+import os
+import logging
+
+from flask import Flask, render_template, flash
 from datetime import datetime
 
 import bluescal
 
 app = Flask(__name__)
+app.secret_key = os.urandom(32)
+app.logger.setLevel(logging.INFO)
 
 @app.route('/')
 def index():
-    calendar = bluescal.refresh()
+    calendar = bluescal.refresh(app.logger)
+    if not calendar:
+        flash("No events found; a sync error may have occurred.")
+        app.logger.error("No events found; a sync error may have occurred.")
+        return render_template('index.html', events=[])
     events = []
     for i, cal_event in enumerate(calendar.events):
         event = {}
@@ -31,6 +39,9 @@ def index():
         event["features"] = cal_event.get("CATEGORIES", [])
         event["description"] = cal_event.get("DESCRIPTION", "")
         events.append(event)
+    if not events:
+        flash("No events found; a sync error may have occurred.")
+        app.logger.error("No events found; a sync error may have occurred.")
     return render_template('index.html', events=events)
 
 @app.route('/about')
