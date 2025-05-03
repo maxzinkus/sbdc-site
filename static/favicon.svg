@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <!-- Blue background -->
+    <rect width="32" height="32" fill="#2A5A8A"/>
+    
+    <!-- White quarter note -->
+    <g fill="white">
+        <!-- Note head -->
+        <ellipse cx="16" cy="20" rx="4" ry="3"/>
+        <!-- Stem -->
+        <rect x="18" y="8" width="2" height="12"/>
+        <!-- Flag -->
+        <path d="M20 8 C22 8, 22 10, 20 10 C18 10, 18 8, 20 8"/>
+    </g>
+</svg> 
