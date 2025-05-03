@@ -1,0 +1,837 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="container">
+        <div class="filters collapsed">
+            <div class="filter-toggle">
+                <span class="filter-toggle-text">Filter Events</span>
+                <div class="filter-toggle-icon"></div>
+            </div>
+            <div class="filter-content">
+                <div class="filter-group">
+                    <div class="filter-label">Location</div>
+                    <div class="filter-option active">All Locations</div>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-label">Time</div>
+                    <div class="filter-option active">All Times</div>
+                    <div class="filter-option">Weekdays</div>
+                    <div class="filter-option">Weekends</div>
+                    <div class="filter-option">Evenings</div>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-label">Features</div>
+                </div>
+                <div class="reset-filters">Reset filters</div>
+            </div>
+        </div>
+
+        <div class="events-section">
+            <div class="upcoming-events">
+                <h2>Upcoming Events</h2>
+                <div class="event-card">
+                    <h3 class="event-title">Friday Night Blues</h3>
+                    <div class="event-details">
+                        <span>7:00 PM - 11:00 PM</span>
+                        <span>Capitol Hill</span>
+                        <span class="event-tag">Live Band</span>
+                        <span class="event-tag">Beginner Lesson</span>
+                    </div>
+                </div>
+                <div class="event-card">
+                    <h3 class="event-title">Sunday Social</h3>
+                    <div class="event-details">
+                        <span>2:00 PM - 6:00 PM</span>
+                        <span>Ballard</span>
+                        <span class="event-tag">All Levels</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="calendar">
+                <div class="calendar-header">
+                    <h2>April 2025</h2>
+                    <div class="calendar-controls">
+                        <button aria-label="Previous month"></button>
+                        <button aria-label="Next month"></button>
+                    </div>
+                </div>
+                <div class="calendar-grid">
+                    <div class="calendar-day-header">Sun</div>
+                    <div class="calendar-day-header">Mon</div>
+                    <div class="calendar-day-header">Tue</div>
+                    <div class="calendar-day-header">Wed</div>
+                    <div class="calendar-day-header">Thu</div>
+                    <div class="calendar-day-header">Fri</div>
+                    <div class="calendar-day-header">Sat</div>
+                    <div class="calendar-day">1</div>
+                    <div class="calendar-day">2</div>
+                    <div class="calendar-day has-event">3</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="https://www.instagram.com/seattle.blues.dance.collective/" target="_blank" class="instagram-link">
+        <img src="{{ url_for('static', filename='images/instagram-logo.png') }}" alt="Instagram">
+    </a>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        const events = [
+            {% for event in events %}
+            {
+                id: {{ event.id }},
+                title: "{{ event.title|safe }}",
+                date: "{{ event.date }}",
+                time: "{{ event.time }}",
+                location: "{{ event.location|escape }}",
+                features: [{% for category in event.categories %}"{{ category|escape }}"{% if not loop.last %}, {% endif %}{% endfor %}],
+                description: `{{ event.description|safe }}`
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+            /* example:
+            {
+                id: 1,
+                title: "Friday Night Blues",
+                date: "2025-05-02",
+                time: "7:00 PM - 11:00 PM",
+                location: "Capitol Hill",
+                features: ["Live Band", "Beginner Lesson"],
+                description: "Join us for an evening of blues dancing with live music and a beginner lesson at 7:30 PM."
+            }*/
+        ];
+
+        // Current date handling
+        let currentDate = getSeattleDate(); // Use current date instead of hardcoded value
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+
+        // Filter state
+        let activeFilters = {
+            location: "All Locations",
+            time: "All Times",
+            features: [] // Changed to array to store multiple features
+        };
+
+        // DOM Elements
+        const eventsContainer = document.querySelector('.upcoming-events');
+        const calendarGrid = document.querySelector('.calendar-grid');
+        const filterOptions = document.querySelectorAll('.filter-option');
+        const monthYearDisplay = document.querySelector('.calendar h2');
+
+        // Initialize the page
+        function initializePage() {
+            renderEvents();
+            renderCalendar();
+            setupEventListeners();
+            setupFilterToggle();
+        }
+
+        // Filter events based on active filters
+        function filterEvents(options = {}) {
+            const {
+                includePast = true,
+                includeInactive = true,
+                timeRange = null, // null means no time range limit
+                forCalendar = false // whether we're filtering for calendar display
+            } = options;
+
+            const today = getSeattleDate();
+
+            return events.filter(event => {
+                const date = createLocalDate(event.date);
+                const dayOfWeek = date.getDay();
+                
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                
+                // Extract start time and convert to 24-hour format for comparison
+                const startTime = event.time.split(' - ')[0];
+                const [time, period] = startTime.split(' ');
+                let [hours, minutes] = time.split(':').map(Number);
+                if (period === 'PM' && hours !== 12) hours += 12;
+                if (period === 'AM' && hours === 12) hours = 0;
+                const isEvening = hours >= 17; // 5:00 PM or later
+                
+                const isPast = date < today;
+
+                // Check if event matches ALL of the selected features
+                const matchesFeatures = activeFilters.features.length === 0 || 
+                    activeFilters.features.every(feature => event.features.includes(feature));
+
+                const matchesTime = activeFilters.time === "All Times" ||
+                    (activeFilters.time === "Weekends" && isWeekend) ||
+                    (activeFilters.time === "Weekdays" && !isWeekend) ||
+                    (activeFilters.time === "Evenings" && isEvening);
+
+                const matchesLocation = activeFilters.location === "All Locations" || 
+                    event.location === activeFilters.location;
+
+                // Check if event is within time range if specified
+                const withinTimeRange = !timeRange || 
+                    (date >= today && date <= timeRange);
+
+                // For calendar, we want to show all events on a day if any match the filters
+                if (forCalendar) {
+                    return matchesLocation && matchesTime && matchesFeatures;
+                }
+
+                // For event list, we apply all filters including past/inactive
+                const shouldInclude = 
+                    (includePast || !isPast) && 
+                    (includeInactive || (matchesFeatures && matchesTime && matchesLocation)) &&
+                    withinTimeRange;
+
+                return shouldInclude;
+            });
+        }
+
+        // Helper function to create a date in local timezone
+        function createLocalDate(dateStr) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            return new Date(year, month - 1, day, 0, 0, 0, 0);
+        }
+
+        // Helper function to get current date in Seattle timezone
+        function getSeattleDate() {
+            const now = new Date();
+            const seattleTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Los_Angeles' }));
+            return new Date(seattleTime.getFullYear(), seattleTime.getMonth(), seattleTime.getDate());
+        }
+
+        // Helper function to format date in Seattle timezone
+        function formatSeattleDate(date) {
+            return date.toLocaleString('en-US', {
+                timeZone: 'America/Los_Angeles',
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        // Render calendar
+        function renderCalendar() {
+            // Create first and last day in Seattle time
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            firstDay.setHours(0, 0, 0, 0);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            lastDay.setHours(0, 0, 0, 0);
+            
+            const daysInMonth = lastDay.getDate();
+            const startingDay = firstDay.getDay();
+            const today = getSeattleDate();
+
+            // Update month/year display
+            monthYearDisplay.textContent = `${getMonthName(currentMonth)} ${currentYear}`;
+
+            // Clear existing calendar days
+            while (calendarGrid.children.length > 7) {
+                calendarGrid.removeChild(calendarGrid.lastChild);
+            }
+
+            // Add empty cells for days before the first of the month
+            for (let i = 0; i < startingDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'calendar-day empty';
+                calendarGrid.appendChild(emptyDay);
+            }
+
+            // Add days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const calendarDate = createLocalDate(dateStr);
+                const isPast = calendarDate < today;
+                
+                // Get all events for this day
+                const dayEvents = events.filter(event => {
+                    const eventDate = createLocalDate(event.date);
+                    return eventDate.getTime() === calendarDate.getTime();
+                });
+
+                // Check if any events match current filters
+                const hasMatchingEvent = dayEvents.some(event => 
+                    filterEvents({ forCalendar: true }).includes(event)
+                );
+                
+                const hasEvent = dayEvents.length > 0;
+                const isToday = calendarDate.getTime() === today.getTime();
+                
+                const dayElement = document.createElement('div');
+                dayElement.className = `calendar-day ${hasEvent ? 'has-event' : ''} ${(isPast || !hasMatchingEvent) ? 'inactive' : ''} ${isToday ? 'today' : ''}`;
+                dayElement.textContent = day;
+                
+                if (hasEvent) {
+                    dayElement.style.cursor = 'pointer';
+                    dayElement.addEventListener('click', (e) => {
+                        showEventSlideOver(dayEvents, calendarDate, e.target);
+                    });
+                }
+                
+                calendarGrid.appendChild(dayElement);
+            }
+        }
+
+        // Get month name
+        function getMonthName(month) {
+            const months = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            return months[month];
+        }
+
+        // Helper function to normalize location to title case
+        function titleCase(location) {
+            return location.split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
+        }
+
+        // Get unique locations from events
+        function getUniqueLocations() {
+            const locations = new Set();
+            events.forEach(event => {
+                locations.add(titleCase(event.location));
+            });
+            return Array.from(locations).sort();
+        }
+
+        // Get unique features from events
+        function getUniqueFeatures() {
+            const features = new Set();
+            events.forEach(event => {
+                event.features.forEach(feature => {
+                    features.add(titleCase(feature));
+                });
+            });
+            return Array.from(features).sort();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Setup location filters
+            const locationGroup = document.querySelector('.filter-group');
+            const locationLabel = locationGroup.querySelector('.filter-label');
+            locationGroup.innerHTML = ''; // Clear existing options
+            locationGroup.appendChild(locationLabel);
+
+            // Add "All Locations" option
+            const allLocationsOption = document.createElement('div');
+            allLocationsOption.className = 'filter-option active';
+            allLocationsOption.textContent = 'All Locations';
+            locationGroup.appendChild(allLocationsOption);
+
+            // Add location options
+            getUniqueLocations().forEach(location => {
+                const locationOption = document.createElement('div');
+                locationOption.className = 'filter-option';
+                locationOption.textContent = location;
+                locationGroup.appendChild(locationOption);
+            });
+
+            // Setup features filters
+            const featuresGroup = document.querySelectorAll('.filter-group')[2];
+            const featuresLabel = featuresGroup.querySelector('.filter-label');
+            featuresGroup.innerHTML = ''; // Clear existing options
+            featuresGroup.appendChild(featuresLabel);
+
+            // Add feature options
+            getUniqueFeatures().forEach(feature => {
+                const featureOption = document.createElement('div');
+                featureOption.className = 'filter-option';
+                featureOption.setAttribute('data-feature', feature);
+                featureOption.textContent = feature;
+                featuresGroup.appendChild(featureOption);
+            });
+
+            // Filter option clicks
+            document.querySelectorAll('.filter-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const group = option.parentElement;
+                    const label = group.querySelector('.filter-label').textContent;
+                    
+                    if (label === 'Features') {
+                        option.classList.toggle('active');
+                        const feature = option.getAttribute('data-feature');
+                        if (option.classList.contains('active')) {
+                            activeFilters.features.push(feature);
+                        } else {
+                            activeFilters.features = activeFilters.features.filter(f => f !== feature);
+                        }
+                    } else {
+                        group.querySelectorAll('.filter-option').forEach(opt => {
+                            opt.classList.remove('active');
+                        });
+                        option.classList.add('active');
+                        
+                        switch(label) {
+                            case 'Location':
+                                activeFilters.location = option.textContent;
+                                break;
+                            case 'Time':
+                                activeFilters.time = option.textContent;
+                                break;
+                        }
+                    }
+                    
+                    updateResetButtonVisibility();
+                    renderEvents();
+                    renderCalendar();
+
+                    // Update slide-over if it's open
+                    const slideOver = document.querySelector('.slide-over');
+                    if (slideOver) {
+                        const dateStr = slideOver.querySelector('.slide-over-title').textContent;
+                        // Parse the date string (e.g., "Monday, April 22") into a Date object
+                        const [weekday, month, day] = dateStr.split(' ');
+                        const currentYear = getSeattleDate().getFullYear();
+                        const monthIndex = new Date(`${month} 1, ${currentYear}`).getMonth();
+                        const date = new Date(currentYear, monthIndex, parseInt(day));
+                        
+                        // Get all events for this date
+                        const dayEvents = events.filter(event => {
+                            const eventDate = createLocalDate(event.date);
+                            return eventDate.getTime() === date.getTime();
+                        });
+
+                        // Re-render the slide-over with the same date and events
+                        showEventSlideOver(dayEvents, date, null, true);
+                    }
+                });
+            });
+
+            // Reset filters button
+            const resetButton = document.querySelector('.reset-filters');
+            resetButton.addEventListener('click', () => {
+                // Reset location filter
+                document.querySelectorAll('.filter-group')[0].querySelectorAll('.filter-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                document.querySelectorAll('.filter-group')[0].querySelector('.filter-option').classList.add('active');
+                activeFilters.location = "All Locations";
+
+                // Reset time filter
+                document.querySelectorAll('.filter-group')[1].querySelectorAll('.filter-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                document.querySelectorAll('.filter-group')[1].querySelector('.filter-option').classList.add('active');
+                activeFilters.time = "All Times";
+
+                // Reset features filter
+                document.querySelectorAll('.filter-group')[2].querySelectorAll('.filter-option').forEach(opt => {
+                    opt.classList.remove('active');
+                });
+                activeFilters.features = [];
+
+                // Hide reset button
+                resetButton.classList.remove('visible');
+
+                // Re-render both events and calendar
+                renderEvents();
+                renderCalendar();
+
+                // Update slide-over if it's open
+                const slideOver = document.querySelector('.slide-over');
+                if (slideOver) {
+                    const dateStr = slideOver.querySelector('.slide-over-title').textContent;
+                    // Parse the date string (e.g., "Monday, April 22") into a Date object
+                    const [weekday, month, day] = dateStr.split(' ');
+                    const currentYear = getSeattleDate().getFullYear();
+                    const monthIndex = new Date(`${month} 1, ${currentYear}`).getMonth();
+                    const date = new Date(currentYear, monthIndex, parseInt(day));
+                    
+                    // Get all events for this date
+                    const dayEvents = events.filter(event => {
+                        const eventDate = createLocalDate(event.date);
+                        return eventDate.getTime() === date.getTime();
+                    });
+
+                    // Re-render the slide-over with the same date and events
+                    showEventSlideOver(dayEvents, date, null, true);
+                }
+            });
+
+            // Calendar navigation
+            const calendarControls = document.querySelector('.calendar-controls');
+            calendarControls.innerHTML = `
+                <button aria-label="Previous month"></button>
+                <button aria-label="Next month"></button>
+            `;
+
+            // Add click handlers for navigation
+            const [prevButton, nextButton] = calendarControls.querySelectorAll('button');
+            prevButton.addEventListener('click', () => {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                renderCalendar();
+            });
+
+            nextButton.addEventListener('click', () => {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                renderCalendar();
+            });
+        }
+
+        // Update reset button visibility based on active filters
+        function updateResetButtonVisibility() {
+            const resetButton = document.querySelector('.reset-filters');
+            const isDefaultState = 
+                activeFilters.location === "All Locations" &&
+                activeFilters.time === "All Times" &&
+                activeFilters.features.length === 0;
+            
+            resetButton.classList.toggle('visible', !isDefaultState);
+        }
+
+        // Render events based on filters
+        function renderEvents() {
+            const today = getSeattleDate();
+            
+            // Get the start of the current week (Sunday)
+            const currentWeekStart = new Date(today);
+            currentWeekStart.setDate(today.getDate() - today.getDay());
+            currentWeekStart.setHours(0, 0, 0, 0);
+            
+            // Get the end of the current week (Saturday)
+            const currentWeekEnd = new Date(currentWeekStart);
+            currentWeekEnd.setDate(currentWeekStart.getDate() + 6);
+            currentWeekEnd.setHours(23, 59, 59, 999);
+            
+            // Get the start of next week (Sunday)
+            const nextWeekStart = new Date(currentWeekStart);
+            nextWeekStart.setDate(currentWeekStart.getDate() + 7);
+            nextWeekStart.setHours(0, 0, 0, 0);
+            
+            // Get the end of next week (Saturday)
+            const nextWeekEnd = new Date(nextWeekStart);
+            nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+            nextWeekEnd.setHours(23, 59, 59, 999);
+
+            // Filter events for the current week and next week
+            const currentWeekEvents = filterEvents({
+                includePast: false,
+                includeInactive: false,
+                timeRange: currentWeekEnd
+            }).filter(event => {
+                const eventDate = createLocalDate(event.date);
+                return eventDate >= currentWeekStart && eventDate <= currentWeekEnd;
+            });
+
+            const nextWeekEvents = filterEvents({
+                includePast: false,
+                includeInactive: false,
+                timeRange: nextWeekEnd
+            }).filter(event => {
+                const eventDate = createLocalDate(event.date);
+                return eventDate >= nextWeekStart && eventDate <= nextWeekEnd;
+            });
+
+            // Sort events by date within each week
+            const sortByDate = (a, b) => createLocalDate(a.date) - createLocalDate(b.date);
+            currentWeekEvents.sort(sortByDate);
+            nextWeekEvents.sort(sortByDate);
+
+            eventsContainer.innerHTML = '<h2>Upcoming Events</h2>';
+            
+            // Render Current Week events
+            if (currentWeekEvents.length > 0) {
+                const currentWeekSection = document.createElement('div');
+                currentWeekSection.className = 'events-week';
+                currentWeekSection.innerHTML = '<div class="week-header">This Week</div>';
+                
+                currentWeekEvents.forEach(event => {
+                    const eventCard = createEventCard(event);
+                    currentWeekSection.appendChild(eventCard);
+                });
+                
+                eventsContainer.appendChild(currentWeekSection);
+            }
+
+            // Render Next Week events
+            if (nextWeekEvents.length > 0) {
+                const nextWeekSection = document.createElement('div');
+                nextWeekSection.className = 'events-week';
+                nextWeekSection.innerHTML = '<div class="week-header">Next Week</div>';
+                
+                nextWeekEvents.forEach(event => {
+                    const eventCard = createEventCard(event);
+                    nextWeekSection.appendChild(eventCard);
+                });
+                
+                eventsContainer.appendChild(nextWeekSection);
+            }
+
+            // Show message if no events
+            if (currentWeekEvents.length === 0 && nextWeekEvents.length === 0) {
+                eventsContainer.innerHTML += '<p>No upcoming events match your filters.</p>';
+            }
+        }
+
+        // Helper function to create event card
+        function createEventCard(event) {
+            const eventDate = createLocalDate(event.date);
+            const formattedDate = formatSeattleDate(eventDate);
+            
+            const eventCard = document.createElement('div');
+            eventCard.className = 'event-card';
+            eventCard.style.cursor = 'pointer';
+            eventCard.innerHTML = `
+                <div class="event-date">${formattedDate}</div>
+                <h3 class="event-title">${event.title}</h3>
+                <div class="event-details">
+                    <span>${event.time}</span>
+                    <span>${event.location}</span>
+                    ${event.features.map(feature => 
+                        `<span class="event-tag">${feature}</span>`
+                    ).join('')}
+                </div>
+            `;
+
+            // Add click handler to open slide-over
+            eventCard.addEventListener('click', () => {
+                // Get all events for this day
+                const dayEvents = events.filter(e => {
+                    const eDate = createLocalDate(e.date);
+                    return eDate.getTime() === eventDate.getTime();
+                });
+                showEventSlideOver(dayEvents, eventDate, eventCard);
+            });
+
+            // Add hover functionality for non-mobile devices
+            if (window.innerWidth > 768) {
+                eventCard.addEventListener('mouseenter', () => {
+                    const eventMonth = eventDate.getMonth();
+                    const eventYear = eventDate.getFullYear();
+                    
+                    // Only highlight if calendar is showing the same month
+                    if (eventMonth === currentMonth && eventYear === currentYear) {
+                        const day = eventDate.getDate();
+                        const calendarDays = document.querySelectorAll('.calendar-day');
+                        calendarDays.forEach(dayElement => {
+                            if (parseInt(dayElement.textContent) === day) {
+                                dayElement.classList.add('highlight');
+                            }
+                        });
+                    }
+                });
+
+                eventCard.addEventListener('mouseleave', () => {
+                    const calendarDays = document.querySelectorAll('.calendar-day');
+                    calendarDays.forEach(dayElement => {
+                        dayElement.classList.remove('highlight');
+                    });
+                });
+            }
+
+            return eventCard;
+        }
+
+        // Show event slide-over
+        function showEventSlideOver(events, date, targetElement, isUpdate = false) {
+            const existingSlideOver = document.querySelector('.slide-over');
+            const isSameDay = existingSlideOver && 
+                existingSlideOver.querySelector('.slide-over-title').textContent === formatSeattleDate(date);
+
+            // If it's the same day and we're not forcing an update, just return
+            if (isSameDay && !isUpdate) {
+                return;
+            }
+
+            // If we have an existing slide-over and it's a different day, animate it out first
+            if (existingSlideOver && !isSameDay) {
+                existingSlideOver.classList.remove('visible');
+                return new Promise(resolve => {
+                    setTimeout(() => {
+                        existingSlideOver.remove();
+                        createAndShowSlideOver(events, date, targetElement);
+                        resolve();
+                    }, 150); // Faster slide-out animation
+                });
+            }
+
+            // If we have an existing slide-over and it's an update, remove it immediately
+            if (existingSlideOver && isUpdate) {
+                existingSlideOver.remove();
+            }
+
+            // Create and show the slide-over
+            createAndShowSlideOver(events, date, targetElement, isUpdate);
+        }
+
+        // Helper function to create and show the slide-over
+        function createAndShowSlideOver(events, date, targetElement, isUpdate = false) {
+            // Sort events by start time
+            events.sort((a, b) => {
+                const timeA = a.time.split(' - ')[0];
+                const timeB = b.time.split(' - ')[0];
+                
+                // Convert time strings to comparable values
+                const parseTime = (timeStr) => {
+                    const [time, period] = timeStr.split(' ');
+                    let [hours, minutes] = time.split(':').map(Number);
+                    if (period === 'PM' && hours !== 12) hours += 12;
+                    if (period === 'AM' && hours === 12) hours = 0;
+                    return hours * 60 + minutes; // Convert to minutes for easy comparison
+                };
+                
+                return parseTime(timeA) - parseTime(timeB);
+            });
+
+            // Create slide-over
+            const slideOver = document.createElement('div');
+            slideOver.className = 'slide-over';
+            
+            // Format date
+            const formattedDate = formatSeattleDate(date);
+            
+            // Create slide-over content
+            slideOver.innerHTML = `
+                <div class="slide-over-header">
+                    <h2 class="slide-over-title">${formattedDate}</h2>
+                    <div class="slide-over-close">&times;</div>
+                </div>
+                <div class="slide-over-content">
+                    ${events.map(event => {
+                        const isFiltered = !filterEvents({ forCalendar: true }).includes(event);
+                        return `
+                            <div class="event-card ${isFiltered ? 'filtered' : ''}">
+                                <h3 class="event-title">${event.title}</h3>
+                                <div class="event-details">
+                                    <span>${event.time}</span>
+                                    <span>${event.location}</span>
+                                    ${event.features.map(feature => 
+                                        `<span class="event-tag">${feature}</span>`
+                                    ).join('')}
+                                </div>
+                                <div class="event-description">${event.description}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                <div class="slide-over-scroll-indicator up"></div>
+                <div class="slide-over-scroll-indicator down"></div>
+            `;
+
+            // Add event listeners
+            const closeButton = slideOver.querySelector('.slide-over-close');
+            closeButton.addEventListener('click', () => {
+                slideOver.classList.remove('visible');
+                setTimeout(() => slideOver.remove(), 150); // Match the faster slide-out
+            });
+
+            // Handle Escape key
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') {
+                    slideOver.classList.remove('visible');
+                    setTimeout(() => slideOver.remove(), 150); // Match the faster slide-out
+                    document.removeEventListener('keydown', handleEscape);
+                }
+            };
+            document.addEventListener('keydown', handleEscape);
+
+            // Add to calendar container and trigger animation
+            const calendar = document.querySelector('.calendar');
+            calendar.appendChild(slideOver);
+            
+            // If it's an update (filter change), don't animate
+            if (isUpdate) {
+                slideOver.classList.add('visible');
+            } else {
+                requestAnimationFrame(() => {
+                    slideOver.classList.add('visible');
+                });
+            }
+
+            // Handle scroll indicators
+            const content = slideOver.querySelector('.slide-over-content');
+            const upIndicator = slideOver.querySelector('.slide-over-scroll-indicator.up');
+            const downIndicator = slideOver.querySelector('.slide-over-scroll-indicator.down');
+
+            const updateScrollIndicators = () => {
+                const scrollTop = content.scrollTop;
+                const scrollHeight = content.scrollHeight;
+                const clientHeight = content.clientHeight;
+
+                // Show up indicator if scrolled down
+                if (scrollTop > 0) {
+                    upIndicator.style.opacity = '0.6';
+                } else {
+                    upIndicator.style.opacity = '0';
+                }
+
+                // Show down indicator if there's more content below
+                if (scrollTop + clientHeight < scrollHeight) {
+                    downIndicator.style.opacity = '0.6';
+                } else {
+                    downIndicator.style.opacity = '0';
+                }
+            };
+
+            // Initial check
+            updateScrollIndicators();
+
+            // Update on scroll
+            content.addEventListener('scroll', updateScrollIndicators);
+
+            // Update on resize
+            window.addEventListener('resize', updateScrollIndicators);
+        }
+
+        // Setup filter toggle functionality
+        function setupFilterToggle() {
+            const filters = document.querySelector('.filters');
+            const toggle = document.querySelector('.filter-toggle');
+            const icon = document.querySelector('.filter-toggle-icon');
+            const calendar = document.querySelector('.calendar');
+            
+            // Check if filters were previously collapsed
+            const isCollapsed = localStorage.getItem('filtersCollapsed') === 'true';
+            if (isCollapsed) {
+                filters.classList.add('collapsed');
+                icon.classList.add('expanded');
+            }
+
+            toggle.addEventListener('click', () => {
+                const wasCollapsed = filters.classList.contains('collapsed');
+                filters.classList.toggle('collapsed');
+                icon.classList.toggle('expanded');
+                
+                // Save the collapsed state
+                localStorage.setItem('filtersCollapsed', filters.classList.contains('collapsed'));
+
+                // Only auto-scroll on desktop
+                if (window.innerWidth > 768) {
+                    if (wasCollapsed) {
+                        // When expanding, wait for the content to be visible
+                        const handleExpand = () => {
+                            const calendarRect = calendar.getBoundingClientRect();
+                            const scrollPosition = window.scrollY + calendarRect.top - 20;
+                            window.scrollTo({
+                                top: scrollPosition
+                            });
+                            filters.removeEventListener('transitionend', handleExpand);
+                        };
+                        
+                        // Start listening for the transition to complete
+                        filters.addEventListener('transitionend', handleExpand);
+                    } else {
+                        // If we're collapsing, scroll immediately
+                        const filtersRect = filters.getBoundingClientRect();
+                        const scrollPosition = window.scrollY + filtersRect.top;
+                        window.scrollTo({
+                            top: scrollPosition
+                        });
+                    }
+                }
+            });
+        }        // Initialize the page
+        initializePage();
+    </script>
+{% endblock %}

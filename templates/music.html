@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="container">
+        <h1>Blues Music</h1>
+        <div class="music-container">
+            <div class="music-item">
+                <h2>Test Playlist</h2>
+                <p>Test Playlist is a test spotify playlist.</p>
+                <iframe src="https://open.spotify.com/embed/playlist/testplaylist" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+            </div>
+            <div class="music-item">
+                <h2>Test Playlist</h2>
+                <p>Test Playlist is a test Apple Music playlist.</p>
+                <iframe src="https://embed.music.apple.com/us/playlist/testplaylist/pl.u-VXJQyWQYzq" width="300" height="380" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>
+            </div>
+        </div>
+    </div>
+{% endblock %}

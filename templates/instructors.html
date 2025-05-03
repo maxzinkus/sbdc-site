@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+    <div class="container">
+        <h1>Instructor Bios</h1>
+        <div class="instructor-container">
+            <div class="instructor-card">
+                <img src="{{ url_for('static', filename='images/instructors/test.jpg') }}" alt="Test Image">
+                <h2>Test Instructor</h2>
+                <div class="instructor-bio">
+                    <p>Test Instructor is a test instructor.</p>
+                </div>
+                <div class="instructor-socials">
+                    <a href="https://www.instagram.com/testinstructor">Instagram</a>
+                    <a href="https://www.facebook.com/testinstructor">Facebook</a>
+                    <a href="https://www.youtube.com/testinstructor">YouTube</a>
+                </div>
+                <div class="instructor-contact">
+                    <p>Email: <a href="mailto:testinstructor@gmail.com">testinstructor@gmail.com</a></p>
+                    <p>Phone: <a href="tel:+1234567890">123-456-7890</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

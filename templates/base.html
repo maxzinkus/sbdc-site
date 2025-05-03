@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seattle Blues Dance Collective</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Menu -->
+    <button class="menu-toggle">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+    <div class="menu-overlay"></div>
+    <div class="menu">
+        <div class="menu-header">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Seattle Blues Dance Collective" class="menu-logo">
+        </div>
+        <div class="menu-items">
+            <a href="/" class="menu-item">Events</a>
+            <a href="/about" class="menu-item">About</a>
+            <a href="/instructors" class="menu-item">Instructor Bios</a>
+            <a href="/gallery" class="menu-item">Gallery & Videos</a>
+            <a href="/history" class="menu-item">Blues History</a>
+            <a href="/music" class="menu-item">Blues Music</a>
+            <a href="/contact" class="menu-item">Contact</a>
+            <a href="/donate" class="menu-item">Donate</a>
+        </div>
+    </div>
+    <!-- Header -->
+    <header>
+        <div class="header-image">
+            <img src="{{ url_for('static', filename='images/logo.jpg') }}" alt="Seattle Blues Dance Collective">
+        </div>
+    </header>
+    <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+    {% block content %}{% endblock %}
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>
