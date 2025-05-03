@@ -5,6 +5,7 @@
     --accent-light: #4a8bc5;
     --accent-dark: #2a5a8a;
     --background-color: #f8f9fa;
+    --warning-color: #e28743;
     --text-color: #1a1a2e;
     --text-light: #6c757d;
     --border-radius: 12px;
@@ -784,3 +785,14 @@ html {
 .slide-over .event-card.filtered .event-title {
     color: var(--text-light);
 }
+
+ul.flashes {
+    list-style-type: none;
+    text-align: center;
+    margin: 0;
+    color: var(--text-color);
+    background-color: var(--warning-color);
+    font-size: 0.8rem;
+    padding: 0.1rem;
+}
+
