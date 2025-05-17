@@ -463,6 +463,8 @@ html {
     overflow: hidden;
     border-radius: var(--border-radius);
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
 }
 
 .slide-over.visible {
@@ -480,6 +482,7 @@ html {
     justify-content: space-between;
     z-index: 1;
     border-radius: var(--border-radius) var(--border-radius) 0 0;
+    flex-shrink: 0;
 }
 
 .slide-over-close {
@@ -531,9 +534,11 @@ html {
 .slide-over-content {
     padding: 1rem;
     position: relative;
-    height: 100%;
+    flex: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    height: 100%;
+    padding-bottom: 4rem;
 }
 
 .slide-over .event-card {
