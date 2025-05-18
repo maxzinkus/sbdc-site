@@ -54,7 +54,7 @@
         </div>
     </div>
 
-    <a href="https://www.instagram.com/seattle.blues.dance.collective/" target="_blank" class="instagram-link">
+    <a href="https://www.instagram.com/seattle.blues.dance.collective/" target="_blank" rel="noopener" class="instagram-link">
         <img src="{{ url_for('static', filename='images/instagram-logo.png') }}" alt="Instagram">
     </a>
 {% endblock %}
@@ -584,7 +584,17 @@
                     const eDate = createLocalDate(e.date);
                     return eDate.getTime() === eventDate.getTime();
                 });
-                showEventSlideOver(dayEvents, eventDate, eventCard);
+                showEventSlideOver(dayEvents, eventDate, eventCard).then(() => {
+                    // Once the slide-over animation is complete, scroll to the event
+                    const slideOver = document.querySelector('.slide-over');
+                    const targetEventTitle = eventCard.querySelector('.event-title').textContent;
+                    const targetEventCard = Array.from(slideOver.querySelectorAll('.event-card')).find(card => 
+                        card.querySelector('.event-title').textContent === targetEventTitle
+                    );
+                    if (targetEventCard) {
+                        targetEventCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
             });
 
             // Add hover functionality for non-mobile devices
@@ -622,9 +632,9 @@
             const isSameDay = existingSlideOver && 
                 existingSlideOver.querySelector('.slide-over-title').textContent === formatSeattleDate(date);
 
-            // If it's the same day and we're not forcing an update, just return
+            // If it's the same day and we're not forcing an update, just return a resolved promise
             if (isSameDay && !isUpdate) {
-                return;
+                return Promise.resolve();
             }
 
             // If we have an existing slide-over and it's a different day, animate it out first
@@ -633,8 +643,7 @@
                 return new Promise(resolve => {
                     setTimeout(() => {
                         existingSlideOver.remove();
-                        createAndShowSlideOver(events, date, targetElement);
-                        resolve();
+                        createAndShowSlideOver(events, date, targetElement, isUpdate).then(resolve);
                     }, 150); // Faster slide-out animation
                 });
             }
@@ -645,126 +654,131 @@
             }
 
             // Create and show the slide-over
-            createAndShowSlideOver(events, date, targetElement, isUpdate);
+            return createAndShowSlideOver(events, date, targetElement, isUpdate);
         }
 
         // Helper function to create and show the slide-over
         function createAndShowSlideOver(events, date, targetElement, isUpdate = false) {
-            // Sort events by start time
-            events.sort((a, b) => {
-                const timeA = a.time.split(' - ')[0];
-                const timeB = b.time.split(' - ')[0];
-                
-                // Convert time strings to comparable values
-                const parseTime = (timeStr) => {
-                    const [time, period] = timeStr.split(' ');
-                    let [hours, minutes] = time.split(':').map(Number);
-                    if (period === 'PM' && hours !== 12) hours += 12;
-                    if (period === 'AM' && hours === 12) hours = 0;
-                    return hours * 60 + minutes; // Convert to minutes for easy comparison
-                };
-                
-                return parseTime(timeA) - parseTime(timeB);
-            });
+            return new Promise(resolve => {
+                // Sort events by start time
+                events.sort((a, b) => {
+                    const timeA = a.time.split(' - ')[0];
+                    const timeB = b.time.split(' - ')[0];
+                    
+                    // Convert time strings to comparable values
+                    const parseTime = (timeStr) => {
+                        const [time, period] = timeStr.split(' ');
+                        let [hours, minutes] = time.split(':').map(Number);
+                        if (period === 'PM' && hours !== 12) hours += 12;
+                        if (period === 'AM' && hours === 12) hours = 0;
+                        return hours * 60 + minutes; // Convert to minutes for easy comparison
+                    };
+                    
+                    return parseTime(timeA) - parseTime(timeB);
+                });
 
-            // Create slide-over
-            const slideOver = document.createElement('div');
-            slideOver.className = 'slide-over';
-            
-            // Format date
-            const formattedDate = formatSeattleDate(date);
-            
-            // Create slide-over content
-            slideOver.innerHTML = `
-                <div class="slide-over-header">
-                    <h2 class="slide-over-title">${formattedDate}</h2>
-                    <div class="slide-over-close">&times;</div>
-                </div>
-                <div class="slide-over-content">
-                    ${events.map(event => {
-                        const isFiltered = !filterEvents({ forCalendar: true }).includes(event);
-                        return `
-                            <div class="event-card ${isFiltered ? 'filtered' : ''}">
-                                <h3 class="event-title">${event.title}</h3>
-                                <div class="event-details">
-                                    <span>${event.time}</span>
-                                    <span>${event.location}</span>
-                                    ${event.features.map(feature => 
-                                        `<span class="event-tag">${feature}</span>`
-                                    ).join('')}
+                // Create slide-over
+                const slideOver = document.createElement('div');
+                slideOver.className = 'slide-over';
+                
+                // Format date
+                const formattedDate = formatSeattleDate(date);
+                
+                // Create slide-over content
+                slideOver.innerHTML = `
+                    <div class="slide-over-header">
+                        <h2 class="slide-over-title">${formattedDate}</h2>
+                        <div class="slide-over-close">&times;</div>
+                    </div>
+                    <div class="slide-over-content">
+                        ${events.map(event => {
+                            const isFiltered = !filterEvents({ forCalendar: true }).includes(event);
+                            return `
+                                <div class="event-card ${isFiltered ? 'filtered' : ''}">
+                                    <h3 class="event-title">${event.title}</h3>
+                                    <div class="event-details">
+                                        <span>⏰ ${event.time}</span>
+                                        <span>📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}" target="_blank" rel="noopener">${event.location}</a></span>
+                                        ${event.features.map(feature => 
+                                            `<span class="event-tag">${feature}</span>`
+                                        ).join('')}
+                                    </div>
+                                    <div class="event-description">${event.description}</div>
                                 </div>
-                                <div class="event-description">${event.description}</div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-                <div class="slide-over-scroll-indicator up"></div>
-                <div class="slide-over-scroll-indicator down"></div>
-            `;
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="slide-over-scroll-indicator up"></div>
+                    <div class="slide-over-scroll-indicator down"></div>
+                `;
 
-            // Add event listeners
-            const closeButton = slideOver.querySelector('.slide-over-close');
-            closeButton.addEventListener('click', () => {
-                slideOver.classList.remove('visible');
-                setTimeout(() => slideOver.remove(), 150); // Match the faster slide-out
-            });
-
-            // Handle Escape key
-            const handleEscape = (e) => {
-                if (e.key === 'Escape') {
+                // Add event listeners
+                const closeButton = slideOver.querySelector('.slide-over-close');
+                closeButton.addEventListener('click', () => {
                     slideOver.classList.remove('visible');
                     setTimeout(() => slideOver.remove(), 150); // Match the faster slide-out
-                    document.removeEventListener('keydown', handleEscape);
-                }
-            };
-            document.addEventListener('keydown', handleEscape);
-
-            // Add to calendar container and trigger animation
-            const calendar = document.querySelector('.calendar');
-            calendar.appendChild(slideOver);
-            
-            // If it's an update (filter change), don't animate
-            if (isUpdate) {
-                slideOver.classList.add('visible');
-            } else {
-                requestAnimationFrame(() => {
-                    slideOver.classList.add('visible');
                 });
-            }
 
-            // Handle scroll indicators
-            const content = slideOver.querySelector('.slide-over-content');
-            const upIndicator = slideOver.querySelector('.slide-over-scroll-indicator.up');
-            const downIndicator = slideOver.querySelector('.slide-over-scroll-indicator.down');
+                // Handle Escape key
+                const handleEscape = (e) => {
+                    if (e.key === 'Escape') {
+                        slideOver.classList.remove('visible');
+                        setTimeout(() => slideOver.remove(), 150); // Match the faster slide-out
+                        document.removeEventListener('keydown', handleEscape);
+                    }
+                };
+                document.addEventListener('keydown', handleEscape);
 
-            const updateScrollIndicators = () => {
-                const scrollTop = content.scrollTop;
-                const scrollHeight = content.scrollHeight;
-                const clientHeight = content.clientHeight;
-
-                // Show up indicator if scrolled down
-                if (scrollTop > 0) {
-                    upIndicator.style.opacity = '0.6';
+                // Add to calendar container and trigger animation
+                const calendar = document.querySelector('.calendar');
+                calendar.appendChild(slideOver);
+                
+                // If it's an update (filter change), don't animate
+                if (isUpdate) {
+                    slideOver.classList.add('visible');
+                    resolve();
                 } else {
-                    upIndicator.style.opacity = '0';
+                    // Wait for the slide animation to complete before resolving
+                    slideOver.addEventListener('transitionend', () => resolve(), { once: true });
+                    requestAnimationFrame(() => {
+                        slideOver.classList.add('visible');
+                    });
                 }
 
-                // Show down indicator if there's more content below
-                if (scrollTop + clientHeight < scrollHeight) {
-                    downIndicator.style.opacity = '0.6';
-                } else {
-                    downIndicator.style.opacity = '0';
-                }
-            };
+                // Handle scroll indicators
+                const content = slideOver.querySelector('.slide-over-content');
+                const upIndicator = slideOver.querySelector('.slide-over-scroll-indicator.up');
+                const downIndicator = slideOver.querySelector('.slide-over-scroll-indicator.down');
 
-            // Initial check
-            updateScrollIndicators();
+                const updateScrollIndicators = () => {
+                    const scrollTop = content.scrollTop;
+                    const scrollHeight = content.scrollHeight;
+                    const clientHeight = content.clientHeight;
 
-            // Update on scroll
-            content.addEventListener('scroll', updateScrollIndicators);
+                    // Show up indicator if scrolled down
+                    if (scrollTop > 0) {
+                        upIndicator.style.opacity = '0.6';
+                    } else {
+                        upIndicator.style.opacity = '0';
+                    }
 
-            // Update on resize
-            window.addEventListener('resize', updateScrollIndicators);
+                    // Show down indicator if there's more content below
+                    if (scrollTop + clientHeight < scrollHeight) {
+                        downIndicator.style.opacity = '0.6';
+                    } else {
+                        downIndicator.style.opacity = '0';
+                    }
+                };
+
+                // Initial check
+                updateScrollIndicators();
+
+                // Update on scroll
+                content.addEventListener('scroll', updateScrollIndicators);
+
+                // Update on resize
+                window.addEventListener('resize', updateScrollIndicators);
+            });
         }
 
         // Setup filter toggle functionality
