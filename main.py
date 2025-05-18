@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 
 from flask import Flask, render_template, flash
@@ -15,11 +16,18 @@ app.logger.setLevel(logging.INFO)
 
 @app.route('/')
 def index():
-    calendar = bluescal.refresh(app.logger)
+    calendar = bluescal.refresh(app.logger) # TODO start using fly.io postgres
     if not calendar:
         flash("No events found; a sync error may have occurred.")
         app.logger.error("No events found; a sync error may have occurred.")
         return render_template('index.html', events=[])
+    events = process_events(calendar)
+    if not events:
+        flash("No events found; a sync error may have occurred.")
+        app.logger.error("No events found; a sync error may have occurred.")
+    return render_template('index.html', events=events)
+
+def process_events(calendar):
     events = []
     for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: x["DTSTART"].dt)):
         event = {}
@@ -30,11 +38,10 @@ def index():
         # Parse the iCalendar date strings into datetime objects
         dtstart = cal_event.get("DTSTART")
         dtend = cal_event.get("DTEND")
-
-        # TODO: get neighborhood from location: Maps? LLM? -> cache; https://stackoverflow.com/questions/13488759/is-it-possible-to-get-the-neighborhood-of-an-address-using-google-maps-api-or-bi
-
         utc_start = dtstart.dt.replace(tzinfo=timezone.utc)
         local_start = utc_start.astimezone(ZoneInfo("America/Los_Angeles"))
+
+        # TODO: there's some UTC/PT stuff going on here
 
         if dtend:
             utc_end = dtend.dt.replace(tzinfo=timezone.utc)
@@ -47,6 +54,8 @@ def index():
             event["time"] = local_start.strftime("%-I:%M %p") + " - " + local_end.strftime("%-I:%M %p")
         else:
             event["time"] = local_start.strftime("%-I:%M %p")
+
+        # TODO: get neighborhood from location: Maps? LLM? -> cache; https://stackoverflow.com/questions/13488759/is-it-possible-to-get-the-neighborhood-of-an-address-using-google-maps-api-or-bi
         event["location"] = cal_event.get("LOCATION", "")
         features = set()
         if "live music" in cal_event.get("DESCRIPTION", "").lower():
@@ -57,24 +66,24 @@ def index():
         
         # Process description HTML to add target="_blank" and rel="noopener" to links
         description = cal_event.get("DESCRIPTION", "")
-        try:
-            soup = BeautifulSoup(description, 'html.parser')
-            for link in soup.find_all('a'):
-                link['target'] = '_blank'
-                link['rel'] = 'noopener'
-                if len(link.text) > 40 and link.text == link.get("href", ""):
-                    link.string = link.text[:40] + '[...]'
-            event["description"] = str(soup)
-        except HTMLParser.HTMLParseError as e:
-            app.logger.error(f"HTML parsing error: {e}")
-            # If parsing fails, use the original description
-            event["description"] = description
-
+        if description:
+            try:
+                # Convert plain text URLs to links
+                url_pattern = re.compile(r'(?<!href=")(?<!src=")(https?://\S+)(?!")')
+                description = url_pattern.sub(r'<a href="\1">\1</a>', description)
+                soup = BeautifulSoup(description, 'html.parser')
+                for link in soup.find_all('a'):
+                    link['target'] = '_blank'
+                    link['rel'] = 'noopener'
+                    if len(link.text) > 40 and link.text == link.get("href", ""):
+                        link.string = link.text[:40] + '[...]'
+                event["description"] = str(soup)
+            except HTMLParser.HTMLParseError as e:
+                app.logger.error(f"HTML parsing error: {e}")
+                # If parsing fails, use the original description
+                event["description"] = description
         events.append(event)
-    if not events:
-        flash("No events found; a sync error may have occurred.")
-        app.logger.error("No events found; a sync error may have occurred.")
-    return render_template('index.html', events=events)
+    return events
 
 @app.route('/recurring-events')
 def recurring_events():
