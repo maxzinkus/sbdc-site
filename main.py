@@ -4,6 +4,8 @@ import logging
 from flask import Flask, render_template, flash
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+from bs4 import BeautifulSoup
+from html.parser import HTMLParser
 
 import bluescal
 
@@ -52,7 +54,22 @@ def index():
         if "lesson" in cal_event.get("DESCRIPTION", "").lower():
             features.add("Lesson")
         event["features"] = list(features)
-        event["description"] = cal_event.get("DESCRIPTION", "")
+        
+        # Process description HTML to add target="_blank" and rel="noopener" to links
+        description = cal_event.get("DESCRIPTION", "")
+        try:
+            soup = BeautifulSoup(description, 'html.parser')
+            for link in soup.find_all('a'):
+                link['target'] = '_blank'
+                link['rel'] = 'noopener'
+                if len(link.text) > 40 and link.text == link.get("href", ""):
+                    link.string = link.text[:40] + '[...]'
+            event["description"] = str(soup)
+        except HTMLParser.HTMLParseError as e:
+            app.logger.error(f"HTML parsing error: {e}")
+            # If parsing fails, use the original description
+            event["description"] = description
+
         events.append(event)
     if not events:
         flash("No events found; a sync error may have occurred.")

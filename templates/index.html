@@ -263,9 +263,9 @@
             return months[month];
         }
 
-        // Helper function to normalize location to title case
-        function titleCase(location) {
-            return location.split(' ')
+        // Helper function to normalize to title case
+        function titleCase(phrase) {
+            return phrase.split(' ')
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
                 .join(' ');
         }
@@ -698,7 +698,7 @@
                                     <h3 class="event-title">${event.title}</h3>
                                     <div class="event-details">
                                         <span>⏰ ${event.time}</span>
-                                        <span>📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}" target="_blank" rel="noopener">${event.location}</a></span>
+                                        ${event.location != "" ? `<span>📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}" target="_blank" rel="noopener">${event.location}</a></span>` : ''}
                                         ${event.features.map(feature => 
                                             `<span class="event-tag">${feature}</span>`
                                         ).join('')}
