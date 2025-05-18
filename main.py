@@ -64,7 +64,6 @@ def process_events(calendar):
             features.add("Lesson")
         event["features"] = list(features)
         
-        # Process description HTML to add target="_blank" and rel="noopener" to links
         description = cal_event.get("DESCRIPTION", "")
         if description:
             try:
