@@ -1,7 +1,169 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+    h2 {
+        border-bottom: 2px solid var(--accent-color);
+        margin-bottom: 1em;
+    }
+    h3 {
+        margin-bottom: 0.5em;
+        border-bottom: 1px solid var(--accent-color);
+    }
+
+    .resource-section {
+        margin-bottom: 2.5rem;
+    }
+
+    .resource-list {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .resource-list li {
+        margin-bottom: 1rem;
+    }
+
+    .resource-list a {
+        color: var(--accent-color);
+        text-decoration: none;
+    }
+
+    .resource-list a:hover {
+        text-decoration: underline;
+    }
+
+    .book-list {
+        list-style: disc;
+        padding-left: 1.5rem;
+    }
+
+    .book-list li {
+        margin-bottom: 0.75rem;
+    }
+
+    .book-list .book-note {
+        font-size: 0.9em;
+        color: var(--text-color);
+        opacity: 0.8;
+        margin-top: 0.25rem;
+    }
+
+    .video-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+    }
+
+    .video-item {
+        background: var(--background-color);
+        padding: 1.25rem;
+        border-radius: 4px;
+        border: 1px solid var(--accent-color);
+    }
+
+    .video-item h3 {
+        margin-top: 0;
+        margin-bottom: 1rem;
+    }
+
+    .section-note {
+        font-style: italic;
+        margin: 1rem 0;
+        padding: 0.5rem;
+        border-left: 3px solid var(--accent-color);
+        background: var(--background-color);
+    }
+</style>
+{% endblock %}
 {% block content %}
     <div class="container">
-        <h1>Blues History</h1>
-        <p>The Seattle Blues Dance Collective is a group of blues dancers who come together to share their love of blues music and dance. We meet every week to dance and learn new dances.</p>
+        <h2>Blues History & Resources</h2>
+        <p>Blues or “blues-idiom” dancing is a collection of dances and movements that grew out of the African-American / Black community
+            and were danced to blues music. As blues music can trace it’s origins to the American South, these dances follow the same lineage.
+            Various styles grew depending on the area one grew up in and matched the music that predominately played in a region. 
+            <a href="https://bluesdancenashville.org/what-is-blues-dancing/" target="_blank" rel="noopener">[Source]</a>
+        </p>
+        <br />
+        <p>Explore these curated resources to deepen your understanding of blues dance, music, and culture. From historical context to modern
+            interpretations, these materials offer valuable insights into the blues dance community.
+            Thank you to Lila Faria for gathering these resources! <a href="https://www.lilaffaria.com/general-5" target="_blank" rel="noopener">[Source]</a>
+        </p>
+        <br />
+        <div class="resource-section">
+            <h3>Educational Content</h3>
+            <ul class="resource-list">
+                <li>
+                    <a href="https://twelvebartalk.podbean.com/" rel="noopener"><strong>12-Bar Talk Podcast</strong></a> - Hosted by Dr. Chelsea
+                    Adams, expert in 20th Century American Literature, African American Literature, Blues, and Black Dance. The podcast covers
+                    Blues history and current artists, dance traditions and trends, and interviews with community leaders including Grey Armstrong,
+                    Damon and Kelsy Stone, Charlley Ward, Brother Yusef, Genevieve Senechal, Josh Davis, and many more.
+                </li>
+                <li>
+                    <a href="https://damonstone.com/blog/" target="_blank" rel="noopener"><strong>Damon Stone's Blog</strong></a>
+                    <ul class="resource-list" style="padding-left: 1.5rem; margin-top: 0.5rem;">
+                        <li>Insights from an internationally renowned blues dance instructor (<a href="https://damonstone.com/interview/" target="_blank">Interview with Damon Stone</a>)</li>
+                    </ul>
+                </li>
+                <li>
+                    <a href="https://obsidiantea.com/" target="_blank" rel="noopener"><strong>Obsidian Tea</strong></a> - Deep dives into blues dance culture and history
+                </li>
+            </ul>
+        </div>
+
+        <div class="resource-section">
+            <h3>Recommended Reading</h3>
+            <p class="section-note">While the original Blues and Jazz Book Club is no longer active, these books offer valuable perspectives on blues music, dance, and African American cultural history. The reading list includes works recommended by blues dance organizers worldwide.</p>
+            
+            <h3>Core List</h3>
+            <ul class="book-list">
+                <li><em>The New Jim Crow: Mass Incarceration in the Age of Colorblindness</em> by Michelle Alexander</li>
+                <li><em>The Devil's Music: A History of the Blues</em> by Giles Oakley</li>
+                <li><em>A Little Devil in America: Notes in Praise of Black Performance</em> by Hanif Abdurraqib</li>
+                <li><em>Lady Sings the Blues</em> by Billie Holiday with William Dufty</li>
+                <li><em>Corregidora</em> by Gayl Jones</li>
+            </ul>
+
+            <h3>Additional Recommendations</h3>
+            <ul class="book-list">
+                <li>
+                    <em>Blues Legacies and Black Feminism</em> by Angela Davis
+                    <div class="book-note">Essential reading for understanding the intersection of blues, feminism, and African American culture</div>
+                </li>
+                <li>
+                    <em>Jookin': The Rise of Social Dance Formations in African American Culture</em> by Katrina Hazzard-Gordon
+                    <div class="book-note">Explores the development of social dance in African American communities</div>
+                </li>
+                <li>
+                    <em>Black and White Styles in Conflict</em> by Thomas Kochman
+                    <div class="book-note">Recommended by Grey Armstrong at Obsidian Tea</div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="resource-section">
+            <h3>Blues Dance Videos</h3>
+            <p class="section-note">These videos are carefully curated to represent authentic blues dance styles. While there's much misinformation about blues dancing online, these examples showcase the true essence of the art form.</p>
+            
+            <div class="video-grid">
+                <div class="video-item">
+                    <h3>Ballroomin' Blues</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://youtu.be/zvFNzcduNB8" target="_blank" rel="noopener"><strong>The Strut</strong></a></li>
+                        <li><a href="https://youtu.be/6WNID3KSPrA" target="_blank" rel="noopener"><strong>The Stride</strong></a></li>
+                        <li><a href="https://youtu.be/IRDJfmNjXUc" target="_blank" rel="noopener"><strong>Slow Drag</strong></a></li>
+                        <li><a href="https://www.youtube.com/watch?v=Y_aP7Sdtouw&list=PLhKoC1sp7gYMeNp_733LPUKHdh_gAV3uF&index=3" target="_blank" rel="noopener"><strong>Fun Ballroomin' Demo</strong></a></li>
+                    </ul>
+                </div>
+                <div class="video-item">
+                    <h3>Jookin' Blues</h3>
+                    <ul class="resource-list">
+                        <li><a href="https://youtu.be/e0O25_Ci21o" target="_blank" rel="noopener"><strong>Struttin'</strong></a></li>
+                        <li><a href="https://youtu.be/K4PPW6WIlBc" target="_blank" rel="noopener"><strong>Texas Shuffle</strong></a></li>
+                        <li><a href="https://youtu.be/l_xEnvaOff0" target="_blank" rel="noopener"><strong>Fun Jookin' Demo</strong></a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

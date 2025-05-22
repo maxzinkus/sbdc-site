@@ -1,7 +1,16 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+    h2 {
+        border-bottom: 2px solid var(--accent-color);
+        margin-bottom: 1em;
+    }
+</style>
+{% endblock %}
 {% block content %}
     <div class="container">
-        <h1>Contact</h1>
-        <p>For more information about the Seattle Blues Dance Collective, please contact us at <a href="mailto:seattlebluesdancecollective@gmail.com">seattlebluesdancecollective@gmail.com</a>.</p>
+        <h2>Contact</h2>
+        <p>To reach a volunteer organizer, please contact us at <a href="mailto:seattlebluesdancecollective@gmail.com">seattlebluesdancecollective@gmail.com</a>.</p>
+        <p>If you encounter an issue with the website, please contact Max at <a href="mailto:sbdc@mzink.us">sbdc@mzink.us</a>.</p>
     </div>
 {% endblock %}

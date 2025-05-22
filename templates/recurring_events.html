@@ -1,11 +1,95 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+    h2 {
+        border-bottom: 2px solid var(--accent-color);
+        margin-bottom: 1em;
+    }
+    h3 {
+        margin-bottom: 0.5em;
+        border-bottom: 1px solid var(--accent-color);
+    }
+    .event-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .event-item {
+        margin-bottom: 2.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        align-items: flex-start;
+    }
+    .event-content {
+        flex: 1;
+        min-width: 300px;
+    }
+    .event-media {
+        flex: 1;
+        min-width: 300px;
+        max-width: 500px;
+    }
+    .event-image {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+        display: block;
+    }
+    @media (max-width: 768px) {
+        .event-item {
+            flex-direction: column;
+        }
+        .event-media {
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
 {% block content %}
     <div class="container">
-        <h1>Recurring Events</h1>
-        <hr>
-        <h2>Blues Underground ("BUG") @ Dance Underground in Capitol Hill</h2>
-        <p>The Seattle Blues Dance Collective is a group of blues dancers who come together to share their love of blues music and dance. We meet every week to dance and learn new dances.</p>
-        <h2>Hillman City Sway @ the Black and Tan Hall, Hillman City (near Ranier Valley)</h2>
-        <p>The Seattle Blues Dance Collective is a group of blues dancers who come together to share their love of blues music and dance. We meet every week to dance and learn new dances.</p>
+        <h2>Recurring Events</h2>
+        <ul class="event-list">
+            <li class="event-item">
+                <div class="event-content">
+                    <h3>Hillman City Sway @ the Black and Tan Hall, Hillman City</h3>
+                    <p>Join us once a month for Hillman City Sway! Presented in partnership with Black & Tan Hall and Blues Underground.
+                        Featuring a swanky evening of local live music, DJ's and dance instructors.
+                    </p>
+                    <p>
+                        <br />
+                        <h4>Monthly on the third Thursday</h4>
+                        <ul class="event-list">
+                            <li>Mixer and dance lessons 8-9pm</li>
+                            <li>Band plays 9-11pm</li>
+                            <li>All ages welcome!</li>
+                        </ul>
+                    </p>
+                </div>
+                <div class="event-media">
+                    <img src="{{ url_for('static', filename='images/hillman.jpg') }}" alt="Hillman City Sway" class="event-image">
+                </div>
+            </li>
+            <li class="event-item">
+                <div class="event-content">
+                    <h3>Blues Underground ("BUG") @ Dance Underground in Capitol Hill</h3>
+                    <p>Savoy's Blues Underground has been Seattle's mainstay social Blues dance night since 2005.
+                        As a branch of the Savoy Swing Club there have been many who have cared for Blues Underground as director,
+                        instructors, and DJs. As well, Blues Underground brings in world renowned instructors for workshops, host
+                        live music nights with local bands, and partners with local organizations supporting Seattle's Black community.
+                    </p>
+                    <p>
+                        <br />
+                        <h4>Monthly on the third Friday</h4>
+                        <ul class="event-list">
+                            <li>Dance lessons 8:30-9pm</li>
+                            <li>DJ'd music from 9pm-12am</li>
+                        </ul>
+                    </p>
+                </div>
+                <div class="event-media">
+                    <img src="{{ url_for('static', filename='images/bug.jpg') }}" alt="Blues Underground" class="event-image">
+                </div>
+            </li>
+        </ul>
     </div>
 {% endblock %}

@@ -1,7 +1,16 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+    h2 {
+        border-bottom: 2px solid var(--accent-color);
+        margin-bottom: 1em;
+    }
+</style>
+{% endblock %}
 {% block content %}
     <div class="container">
-        <h1>Donate</h1>
+        <h2>Donate</h2>
         <p>The Seattle Blues Dance Collective is a non-profit organization that relies on the generosity of our community to continue our mission. Please consider donating to help us continue to provide quality blues dance instruction and events.</p>
+        <p>Please check out the <a href="/contact">Contact page</a> to reach us to donate or ask at an event. We'll add a donation link here soon.</p>
     </div>
 {% endblock %}

@@ -1,7 +1,16 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+    h2 {
+        border-bottom: 2px solid var(--accent-color);
+        margin-bottom: 1em;
+    }
+</style>
+{% endblock %}
 {% block content %}
     <div class="container">
-        <h1>About</h1>
-        <p>The Seattle Blues Dance Collective is a group of blues dancers who come together to share their love of blues music and dance. We meet every week to dance and learn new dances.</p>
+        <h2>About SBDC</h2>
+        <p>The Seattle Blues Dance Collective is a group of blues dancers who come together to share their love of blues music and dance.
+        </p>
     </div>
 {% endblock %}

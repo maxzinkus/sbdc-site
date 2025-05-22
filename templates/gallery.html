@@ -1,10 +1,25 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+    h2 {
+        border-bottom: 2px solid var(--accent-color);
+        margin-bottom: 1em;
+    }
+    .caption {
+        font-size: 0.8em;
+        color: var(--text-color);
+    }
+</style>
+{% endblock %}
 {% block content %}
     <div class="container">
-        <h1>Gallery & Videos</h1>
+        <h2>Gallery & Videos</h2>
+        <p>This page is under construction.</p>
+        <br />
         <div class="gallery-container">
             <div class="gallery-item">
                 <img src="{{ url_for('static', filename='images/gallery/test.jpg') }}" alt="Test Image">
+                <p class="caption">Placeholder image from <a href="https://en.wikipedia.org/wiki/Blues_dance" target="_blank" rel="noopener">Wikipedia</a></p>
             </div>
         </div>
     </div>

@@ -1,24 +1,137 @@
 {% extends 'base.html' %}
+{% block head %}
+<style>
+    h2 {
+        border-bottom: 2px solid var(--accent-color);
+        margin-bottom: 1em;
+    }
+    h3 {
+        margin-bottom: 0.5em;
+        border-bottom: 1px solid var(--accent-color);
+        width: 100%;
+    }
+    .instructor-list {
+        list-style-type: none;
+        padding: 0;
+    }
+    .instructor-item {
+        margin-bottom: 2.5rem;
+    }
+    .instructor-header {
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    .instructor-content {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 2rem;
+        align-items: flex-start;
+    }
+    .instructor-bio {
+        flex: 1;
+        min-width: 300px;
+    }
+    .instructor-media {
+        flex: 0.8;
+        min-width: 250px;
+        max-width: 350px;
+    }
+    .instructor-image {
+        width: 100%;
+        height: auto;
+        max-height: 400px;
+        object-fit: cover;
+        border-radius: 5px;
+        display: block;
+    }
+    .instructor-socials {
+        margin-top: 1rem;
+    }
+    .instructor-socials a {
+        color: var(--accent-color);
+        text-decoration: none;
+    }
+    .instructor-socials a:hover {
+        text-decoration: underline;
+    }
+    .instructor-contact {
+        margin-top: 1rem;
+    }
+    .instructor-contact a {
+        color: var(--accent-color);
+        text-decoration: none;
+    }
+    .instructor-contact a:hover {
+        text-decoration: underline;
+    }
+    @media (max-width: 768px) {
+        .instructor-content {
+            flex-direction: column;
+        }
+        .instructor-media {
+            max-width: 100%;
+        }
+    }
+</style>
+{% endblock %}
 {% block content %}
     <div class="container">
-        <h1>Instructor Bios</h1>
-        <div class="instructor-container">
-            <div class="instructor-card">
-                <img src="{{ url_for('static', filename='images/instructors/test.jpg') }}" alt="Test Image">
-                <h2>Test Instructor</h2>
-                <div class="instructor-bio">
-                    <p>Test Instructor is a test instructor.</p>
+        <h2>Instructor Bios</h2>
+        <ul class="instructor-list">
+            <li class="instructor-item">
+                <div class="instructor-header">
+                    <h3>Lila Faria (she/her)</h3>
                 </div>
-                <div class="instructor-socials">
-                    <a href="https://www.instagram.com/testinstructor">Instagram</a>
-                    <a href="https://www.facebook.com/testinstructor">Facebook</a>
-                    <a href="https://www.youtube.com/testinstructor">YouTube</a>
+                <div class="instructor-content">
+                    <div class="instructor-bio">
+                        <p>Lila is a Seattle-based blues dance instructor and organizer with over eight years
+                            of experience dancing across the U.S., Canada, and Europe. Her work incorporates elements
+                            from her training in Montessori, non-violent communication, CMX community building, positive
+                            discipline and more. Through her teaching, she works to provide her students with informative
+                            dance history while simultaneously empowering them to be their true, authentic selves.
+                        </p>
+                        <div class="instructor-socials">
+                            <a href="https://www.instagram.com/lila.makes.things.happen/" target="_blank" rel="noopener">Instagram</a>
+                        </div>
+                        <div class="instructor-contact">
+                            <p>Email: <a href="mailto:lila.f.faria@gmail.com">lila.f.faria@gmail.com</a></p>
+                        </div>
+                    </div>
+                    <div class="instructor-media">
+                        <img src="{{ url_for('static', filename='images/instructors/lila.jpg') }}" alt="Lila Faria" class="instructor-image">
+                    </div>
                 </div>
-                <div class="instructor-contact">
-                    <p>Email: <a href="mailto:testinstructor@gmail.com">testinstructor@gmail.com</a></p>
-                    <p>Phone: <a href="tel:+1234567890">123-456-7890</a></p>
+            </li>
+            <li class="instructor-item">
+                <div class="instructor-header">
+                    <h3>Robin Chow (he/him)</h3>
                 </div>
-            </div>
-        </div>
+                <div class="instructor-content">
+                    <div class="instructor-bio">
+                        <p>Being a dancer who started later in life, and owing much to the discovery a hip hop tutorial video at the back of a You Got Served DVD, Robin truly believes that dance is inside every one of us. Whether it's a fully realized passion, or a whisper of curiosity, he feels that dance should always be available to our selves, whatever one's dance experience or familiarity.</p>
+                        <p>His dance repertoire is based on solo movement learned from a studio hip hop background, with the journey into social dancing starting with lindy hop and now encompassing balboa and fusion. And since his introduction to blues dancing in 2018, he has become a passionate practitioner and advocate of the form, and is dedicated to a continued journey of learning and sharing of blues dance and culture.</p>
+                    </div>
+                    <div class="instructor-media">
+                        <img src="{{ url_for('static', filename='images/instructors/robin.jpg') }}" alt="Robin Chow" class="instructor-image">
+                    </div>
+                </div>
+            </li>
+            <li class="instructor-item">
+                <div class="instructor-header">
+                    <h3>Amanda Wanner (she/her)</h3>
+                </div>
+                <div class="instructor-content">
+                    <div class="instructor-bio">
+                        <p><strong>Current BUG Director.</strong></p>
+                        <p>Amanda began dancing Lindy hop and Blues dance in Chicago in 2004. Having grown up listening to Blues and seeing a wild amount of live Blues music as a child, Blues dancing fit Amanda's soul.</p>
+                        <p>After moving to the PNW in 2007 she had the opportunity to teach Blues, host for dance events, and moderate practices. Since then, Amanda's knowledge, skill, and focus in the dance has grown and changed; as the wisdom of life will do to the stories our dance can tell.</p>
+                        <p>Through her classes, Amanda focuses on teaching Blues aesthetic, culture, and play. Amanda's biggest passion in the Blues scene is community engagement. She aims to help reshape and rebuild the Seattle Blues dance community with history, community, and culture as a priority.</p>
+                    </div>
+                    <div class="instructor-media">
+                        <img src="{{ url_for('static', filename='images/instructors/amanda.jpg') }}" alt="Amanda Wanner" class="instructor-image">
+                    </div>
+                </div>
+            </li>
+        </ul>
     </div>
 {% endblock %}
