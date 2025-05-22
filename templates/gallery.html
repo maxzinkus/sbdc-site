@@ -9,6 +9,11 @@
         font-size: 0.8em;
         color: var(--text-color);
     }
+    .gallery-image {
+        width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
 </style>
 {% endblock %}
 {% block content %}
@@ -18,8 +23,8 @@
         <br />
         <div class="gallery-container">
             <div class="gallery-item">
-                <img src="{{ url_for('static', filename='images/gallery/test.jpg') }}" alt="Test Image">
-                <p class="caption">Placeholder image from <a href="https://en.wikipedia.org/wiki/Blues_dance" target="_blank" rel="noopener">Wikipedia</a></p>
+                <img class="gallery-image" src="{{ url_for('static', filename='images/gallery/test.jpg') }}" alt="Test Image">
+                <p class="caption">Image from <a href="https://en.wikipedia.org/wiki/Blues_dance" target="_blank" rel="noopener">Wikipedia</a></p>
             </div>
         </div>
     </div>
