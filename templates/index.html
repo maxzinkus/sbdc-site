@@ -65,6 +65,7 @@
             {% for event in events %}
             {
                 id: {{ event.id }},
+                uid: "{{ event.uid }}",
                 title: "{{ event.title|safe }}",
                 date: "{{ event.date }}",
                 time: "{{ event.time }}",
@@ -105,10 +106,28 @@
 
         // Initialize the page
         function initializePage() {
-            renderEvents();
-            renderCalendar();
+            // Create a promise that resolves when both events and calendar are rendered
+            const renderPromise = Promise.all([
+                new Promise(resolve => {
+                    renderEvents();
+                    // Events are rendered synchronously, so we can resolve immediately
+                    resolve();
+                }),
+                new Promise(resolve => {
+                    renderCalendar();
+                    // Calendar is rendered synchronously, so we can resolve immediately
+                    resolve();
+                })
+            ]);
+
+            // Setup event listeners and filters
             setupEventListeners();
             setupFilterToggle();
+
+            // Check URL fragment after everything is rendered
+            renderPromise.then(() => {
+                checkUrlFragment();
+            });
         }
 
         // Filter events based on active filters
@@ -192,6 +211,20 @@
             });
         }
 
+        // Helper function to create a date hash for URL fragments
+        function createDateHash(date) {
+            // Create a consistent hash for a date in YYYY-MM-DD format
+            return `date-${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+        }
+
+        // Helper function to parse a date hash from URL fragment
+        function parseDateHash(hash) {
+            const match = hash.match(/^date-(\d{4})-(\d{2})-(\d{2})$/);
+            if (!match) return null;
+            const [_, year, month, day] = match;
+            return new Date(year, parseInt(month) - 1, parseInt(day));
+        }
+
         // Render calendar
         function renderCalendar() {
             // Create first and last day in Seattle time
@@ -246,6 +279,8 @@
                 if (hasEvent) {
                     dayElement.style.cursor = 'pointer';
                     dayElement.addEventListener('click', (e) => {
+                        // Update URL fragment with date hash
+                        history.replaceState(null, '', `#${createDateHash(calendarDate)}`);
                         showEventSlideOver(dayEvents, calendarDate, e.target);
                     });
                 }
@@ -579,6 +614,9 @@
 
             // Add click handler to open slide-over
             eventCard.addEventListener('click', () => {
+                // Update URL fragment with event UID
+                history.replaceState(null, '', `#event-${event.uid}`);
+                
                 // Get all events for this day
                 const dayEvents = events.filter(e => {
                     const eDate = createLocalDate(e.date);
@@ -587,9 +625,8 @@
                 showEventSlideOver(dayEvents, eventDate, eventCard).then(() => {
                     // Once the slide-over animation is complete, scroll to the event
                     const slideOver = document.querySelector('.slide-over');
-                    const targetEventTitle = eventCard.querySelector('.event-title').textContent;
                     const targetEventCard = Array.from(slideOver.querySelectorAll('.event-card')).find(card => 
-                        card.querySelector('.event-title').textContent === targetEventTitle
+                        card.getAttribute('data-uid') === event.uid
                     );
                     if (targetEventCard) {
                         targetEventCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -694,7 +731,7 @@
                         ${events.map(event => {
                             const isFiltered = !filterEvents({ forCalendar: true }).includes(event);
                             return `
-                                <div class="event-card ${isFiltered ? 'filtered' : ''}">
+                                <div class="event-card ${isFiltered ? 'filtered' : ''}" data-uid="${event.uid}">
                                     <h3 class="event-title">${event.title}</h3>
                                     <div class="event-details">
                                         <span>⏰ ${event.time}</span>
@@ -716,6 +753,8 @@
                 const closeButton = slideOver.querySelector('.slide-over-close');
                 closeButton.addEventListener('click', () => {
                     slideOver.classList.remove('visible');
+                    // Clear URL fragment when closing
+                    history.replaceState(null, '', window.location.pathname);
                     setTimeout(() => slideOver.remove(), 150); // Match the faster slide-out
                 });
 
@@ -723,6 +762,8 @@
                 const handleEscape = (e) => {
                     if (e.key === 'Escape') {
                         slideOver.classList.remove('visible');
+                        // Clear URL fragment when closing with Escape
+                        history.replaceState(null, '', window.location.pathname);
                         setTimeout(() => slideOver.remove(), 150); // Match the faster slide-out
                         document.removeEventListener('keydown', handleEscape);
                     }
@@ -781,6 +822,56 @@
             });
         }
 
+        // Function to check URL fragment and show corresponding event or date
+        function checkUrlFragment() {
+            const fragment = window.location.hash.slice(1); // Remove the # symbol
+            if (!fragment) return;
+
+            // Check if it's a date hash
+            const date = parseDateHash(fragment);
+            if (date) {
+                // Update calendar to show the correct month
+                currentMonth = date.getMonth();
+                currentYear = date.getFullYear();
+                renderCalendar();
+
+                // Get all events for this day
+                const dayEvents = events.filter(event => {
+                    const eventDate = createLocalDate(event.date);
+                    return eventDate.getTime() === date.getTime();
+                });
+
+                // Show the slide-over
+                showEventSlideOver(dayEvents, date);
+                return;
+            }
+
+            // If not a date hash, check if it's an event UID
+            const targetEvent = events.find(event => `event-${event.uid}` === fragment);
+            if (!targetEvent) return;
+
+            // Get the event date
+            const eventDate = createLocalDate(targetEvent.date);
+            
+            // Get all events for this day
+            const dayEvents = events.filter(event => {
+                const eDate = createLocalDate(event.date);
+                return eDate.getTime() === eventDate.getTime();
+            });
+
+            // Show the slide-over
+            showEventSlideOver(dayEvents, eventDate).then(() => {
+                // Find and scroll to the target event
+                const slideOver = document.querySelector('.slide-over');
+                if (slideOver) {
+                    const targetEventCard = slideOver.querySelector(`[data-uid="${targetEvent.uid}"]`);
+                    if (targetEventCard) {
+                        targetEventCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }
+            });
+        }
+
         // Setup filter toggle functionality
         function setupFilterToggle() {
             const filters = document.querySelector('.filters');
@@ -828,7 +919,9 @@
                     }
                 }
             });
-        }        // Initialize the page
+        }
+
+        // Initialize the page
         initializePage();
     </script>
 {% endblock %}
