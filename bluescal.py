@@ -49,7 +49,7 @@ def refresh(logger=None):
         logger.error("Failed to fetch calendar from %s", CAL_URL)
     return None
 
-def process_events(calendar: ical.Calendar):
+def process_events(calendar: ical.Calendar, logger=None):
     global EVENTS_DB
     events = []
     for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: x["DTSTART"].dt)):

@@ -18,7 +18,7 @@ def index():
         flash("No events found; a sync error may have occurred.")
         app.logger.error("No events found; a sync error may have occurred.")
         return render_template('index.html', events=[])
-    events = bluescal.process_events(calendar)
+    events = bluescal.process_events(calendar, app.logger)
     if not events:
         flash("No events found; a sync error may have occurred.")
         app.logger.error("No events found; a sync error may have occurred.")
