@@ -18,6 +18,9 @@ MAPS_API_KEY = os.getenv("MAPS_API_KEY")
 EVENTS_DB = {}
 
 def refresh(logger=None):
+    global MAPS_API_KEY
+    if not MAPS_API_KEY:
+        MAPS_API_KEY = os.getenv("MAPS_API_KEY")
     try:
         if os.path.exists(CAL_FILE):
             if logger:
@@ -88,7 +91,7 @@ def process_events(calendar: ical.Calendar):
             event["time"] = local_start.strftime("%-I:%M %p")
 
         event["location"] = cal_event.get("LOCATION", "")
-        event["neighborhood"] = get_neighborhood(event["location"])
+        event["neighborhood"] = get_neighborhood(event["location"], logger)
         
         features = set()
         if "live music" in cal_event.get("DESCRIPTION", "").lower():
@@ -119,10 +122,10 @@ def process_events(calendar: ical.Calendar):
         events.append(event)
     return events
 
-def get_neighborhood(location: str):
+def get_neighborhood(location: str, logger=None):
     if not MAPS_API_KEY or not location:
         return ""
-    response = requests.get(f"https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={MAPS_API_KEY}")
+    response = requests.get(f"https://maps.googleapis.com/maps/api/geocode/json?address={requests.utils.quote(location)}&key={MAPS_API_KEY}")
     if response.status_code == 200:
         data = response.json()
         if data["status"] == "OK" and data["results"]:
@@ -130,6 +133,12 @@ def get_neighborhood(location: str):
             for comp in components:
                 if "neighborhood" in comp["types"]:
                     return str(comp["long_name"])
+        else:
+            if logger:
+                logger.error("Failed to get neighborhood for %s: %s", location, data["status"])
+    else:
+        if logger:
+            logger.error("Failed to get neighborhood for %s: %s", location, response.text)
     return ""
 
 if __name__ == "__main__":
