@@ -58,7 +58,7 @@ def process_events(calendar: ical.Calendar, logger=None):
         event["uid"] = sha256(str(cal_event.get("UID", str(cal_event))).encode("utf-8")).hexdigest()
         event["title"] = cal_event.get("SUMMARY", "")
         # already in cache
-        if event["uid"] in EVENTS_DB and EVENTS_DB[event["uid"]]["title"] == event["title"]:
+        if event["uid"] in EVENTS_DB and EVENTS_DB[event["uid"]]["title"] == event["title"] and EVENTS_DB[event["uid"]]["neighborhood"] != "":
             events.append(EVENTS_DB[event["uid"]])
             continue
         

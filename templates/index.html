@@ -70,7 +70,7 @@
                 date: "{{ event.date }}",
                 time: "{{ event.time }}",
                 location: "{{ event.location|escape }}",
-                neighborhood: "{{ event.neighborhood|escape }}",
+                neighborhood: "{{ event.neighborhood }}",
                 features: [{% for category in event.categories %}"{{ category|escape }}"{% if not loop.last %}, {% endif %}{% endfor %}],
                 description: `{{ event.description|safe }}`
             }{% if not loop.last %},{% endif %}
@@ -169,7 +169,7 @@
                     (activeFilters.time === "Evenings" && isEvening);
 
                 const matchesLocation = activeFilters.location === "All Locations" || 
-                    event.neighborhood === activeFilters.location || event.neighborhood === "";
+                    event.neighborhood === activeFilters.location;
 
                 // Check if event is within time range if specified
                 const withinTimeRange = !timeRange || 
@@ -300,19 +300,12 @@
             return months[month];
         }
 
-        // Helper function to normalize to title case
-        function titleCase(phrase) {
-            return phrase.split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                .join(' ');
-        }
-
         // Get unique locations from events
         function getUniqueLocations() {
             const locations = new Set();
             events.forEach(event => {
                 if (event.neighborhood != "") {
-                    locations.add(titleCase(event.neighborhood));
+                    locations.add(event.neighborhood);
                 }
             });
             return Array.from(locations).sort();
@@ -323,7 +316,7 @@
             const features = new Set();
             events.forEach(event => {
                 event.features.forEach(feature => {
-                    features.add(titleCase(feature));
+                    features.add(feature);
                 });
             });
             return Array.from(features).sort();
