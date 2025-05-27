@@ -53,15 +53,22 @@ def process_events(calendar: ical.Calendar):
         # Parse the iCalendar date strings into datetime objects
         dtstart = cal_event.get("DTSTART")
         dtend = cal_event.get("DTEND")
-        utc_start = dtstart.dt.replace(tzinfo=timezone.utc)
-        local_start = utc_start.astimezone(ZoneInfo("America/Los_Angeles"))
+        
+        def to_local_time(dt):
+            if dt is None:
+                return None
+            if not dt.dt.tzinfo:
+                # Case 1: No timezone info, assume UTC
+                return dt.dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
+            elif dt.dt.tzinfo.key == "America/Los_Angeles":
+                # Case 3: Already in Los Angeles time
+                return dt.dt
+            else:
+                # Case 2: Has timezone info, convert to Los Angeles
+                return dt.dt.astimezone(ZoneInfo("America/Los_Angeles"))
 
-        # TODO: there's some UTC/PT stuff going on here
-        if dtend:
-            utc_end = dtend.dt.replace(tzinfo=timezone.utc)
-            local_end = utc_end.astimezone(ZoneInfo("America/Los_Angeles"))
-        else:
-            local_end = local_start
+        local_start = to_local_time(dtstart)
+        local_end = to_local_time(dtend) if dtend else local_start
 
         event["date"] = local_start.date().strftime("%Y-%m-%d")
         if local_start != local_end:
@@ -103,4 +110,4 @@ def process_events(calendar: ical.Calendar):
 
 if __name__ == "__main__":
     calendar = refresh()
-    print("\n".join([str(event["SUMMARY"]) for event in calendar.events]))
+    print("\n\n".join([str(event) for event in calendar.events]))
