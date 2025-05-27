@@ -13,6 +13,10 @@ from bs4 import BeautifulSoup
 CAL_URL = "https://calendar.google.com/calendar/ical/seattlebluesdancecollective%40gmail.com/public/basic.ics"
 CAL_FILE = "bluescal.ics"
 
+MAPS_API_KEY = os.getenv("MAPS_API_KEY")
+
+EVENTS_DB = {}
+
 def refresh(logger=None):
     try:
         if os.path.exists(CAL_FILE):
@@ -43,12 +47,17 @@ def refresh(logger=None):
     return None
 
 def process_events(calendar: ical.Calendar):
+    global EVENTS_DB
     events = []
     for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: x["DTSTART"].dt)):
         event = {}
         event["id"] = str(i)
         event["uid"] = sha256(str(cal_event.get("UID", str(cal_event))).encode("utf-8")).hexdigest()
         event["title"] = cal_event.get("SUMMARY", "")
+        # already in cache
+        if event["uid"] in EVENTS_DB and EVENTS_DB[event["uid"]]["title"] == event["title"]:
+            events.append(EVENTS_DB[event["uid"]])
+            continue
         
         # Parse the iCalendar date strings into datetime objects
         dtstart = cal_event.get("DTSTART")
@@ -61,14 +70,16 @@ def process_events(calendar: ical.Calendar):
                 # Case 1: No timezone info, assume UTC
                 return dt.dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
             elif dt.dt.tzinfo.key == "America/Los_Angeles":
-                # Case 3: Already in Los Angeles time
+                # Case 3: Already in Pacific time
                 return dt.dt
             else:
-                # Case 2: Has timezone info, convert to Los Angeles
+                # Case 2: Has timezone info, convert to Pacific
                 return dt.dt.astimezone(ZoneInfo("America/Los_Angeles"))
 
         local_start = to_local_time(dtstart)
         local_end = to_local_time(dtend) if dtend else local_start
+        if local_start is None:
+            continue
 
         event["date"] = local_start.date().strftime("%Y-%m-%d")
         if local_start != local_end:
@@ -76,10 +87,9 @@ def process_events(calendar: ical.Calendar):
         else:
             event["time"] = local_start.strftime("%-I:%M %p")
 
-        # TODO: get neighborhood from location: Maps? https://stackoverflow.com/questions/13488759/is-it-possible-to-get-the-neighborhood-of-an-address-using-google-maps-api-or-bi
-        # TODO use the database as well
         event["location"] = cal_event.get("LOCATION", "")
-        # TODO normalize location with maps
+        event["neighborhood"] = get_neighborhood(event["location"])
+        
         features = set()
         if "live music" in cal_event.get("DESCRIPTION", "").lower():
             features.add("Live Music")
@@ -105,8 +115,22 @@ def process_events(calendar: ical.Calendar):
                 app.logger.error(f"HTML parsing error: {e}")
                 # If parsing fails, use the original description
                 event["description"] = description
+        EVENTS_DB[event["uid"]] = event
         events.append(event)
     return events
+
+def get_neighborhood(location: str):
+    if not MAPS_API_KEY or not location:
+        return ""
+    response = requests.get(f"https://maps.googleapis.com/maps/api/geocode/json?address={location}&key={MAPS_API_KEY}")
+    if response.status_code == 200:
+        data = response.json()
+        if data["status"] == "OK" and data["results"]:
+            components = data["results"][0]["address_components"]
+            for comp in components:
+                if "neighborhood" in comp["types"]:
+                    return str(comp["long_name"])
+    return ""
 
 if __name__ == "__main__":
     calendar = refresh()

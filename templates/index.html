@@ -70,6 +70,7 @@
                 date: "{{ event.date }}",
                 time: "{{ event.time }}",
                 location: "{{ event.location|escape }}",
+                neighborhood: "{{ event.neighborhood|escape }}",
                 features: [{% for category in event.categories %}"{{ category|escape }}"{% if not loop.last %}, {% endif %}{% endfor %}],
                 description: `{{ event.description|safe }}`
             }{% if not loop.last %},{% endif %}
@@ -80,7 +81,8 @@
                 title: "Friday Night Blues",
                 date: "2025-05-02",
                 time: "7:00 PM - 11:00 PM",
-                location: "Capitol Hill",
+                location: "<some address>",
+                neighborhood: "Capitol Hill",
                 features: ["Live Band", "Beginner Lesson"],
                 description: "Join us for an evening of blues dancing with live music and a beginner lesson at 7:30 PM."
             }*/
@@ -167,7 +169,7 @@
                     (activeFilters.time === "Evenings" && isEvening);
 
                 const matchesLocation = activeFilters.location === "All Locations" || 
-                    event.location === activeFilters.location;
+                    event.neighborhood === activeFilters.location || event.neighborhood === "";
 
                 // Check if event is within time range if specified
                 const withinTimeRange = !timeRange || 
@@ -309,7 +311,9 @@
         function getUniqueLocations() {
             const locations = new Set();
             events.forEach(event => {
-                locations.add(titleCase(event.location));
+                if (event.neighborhood != "") {
+                    locations.add(titleCase(event.neighborhood));
+                }
             });
             return Array.from(locations).sort();
         }
