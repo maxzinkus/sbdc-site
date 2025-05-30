@@ -1,8 +1,9 @@
 import os
 import re
 import time
+from typing import List
 from hashlib import sha256
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from html.parser import HTMLParser
 
@@ -55,11 +56,12 @@ def process_events(calendar: ical.Calendar, logger=None):
     for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: x["DTSTART"].dt)):
         event = {}
         event["id"] = str(i)
-        event["uid"] = sha256(str(cal_event.get("UID", str(cal_event))).encode("utf-8")).hexdigest()
+        uid_val = cal_event.get("UID", str(cal_event))
+        event["uid"] = sha256(str(uid_val).encode("utf-8")).hexdigest()
         event["title"] = cal_event.get("SUMMARY", "")
         # already in cache
-        if event["uid"] in EVENTS_DB and EVENTS_DB[event["uid"]]["title"] == event["title"] and EVENTS_DB[event["uid"]]["neighborhood"] != "":
-            events.append(EVENTS_DB[event["uid"]])
+        if EVENTS_DB.get(event["uid"], []) and EVENTS_DB[event["uid"]][0]["title"] == event["title"] and EVENTS_DB[event["uid"]][0]["neighborhood"] != "":
+            events.extend(EVENTS_DB[event["uid"]])
             continue
         
         # Parse the iCalendar date strings into datetime objects
@@ -78,12 +80,12 @@ def process_events(calendar: ical.Calendar, logger=None):
             else:
                 # Case 2: Has timezone info, convert to Pacific
                 return dt.dt.astimezone(ZoneInfo("America/Los_Angeles"))
-
         local_start = to_local_time(dtstart)
         local_end = to_local_time(dtend) if dtend else local_start
         if local_start is None:
             continue
 
+        event["dtstart"] = dtstart.dt
         event["date"] = local_start.date().strftime("%Y-%m-%d")
         if local_start != local_end:
             event["time"] = local_start.strftime("%-I:%M %p") + " - " + local_end.strftime("%-I:%M %p")
@@ -118,9 +120,96 @@ def process_events(calendar: ical.Calendar, logger=None):
                 app.logger.error(f"HTML parsing error: {e}")
                 # If parsing fails, use the original description
                 event["description"] = description
-        EVENTS_DB[event["uid"]] = event
-        events.append(event)
+        sequence = handle_recurring_event(event, event["dtstart"], cal_event.get("RRULE"), logger)
+        EVENTS_DB[event["uid"]] = sequence
+        events.extend(sequence)
     return events
+
+def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.vRecur, logger=None):
+    # takes an event with rrules and returns a list of events
+    events = [event]
+    if not rrule:
+        return events
+    until = rrule.get("UNTIL", [start_date + timedelta(days=180)])
+    if not until or not until[0]:
+        return events
+    until = until[0]
+    if rrule.get("FREQ") == ['MONTHLY'] and rrule.get("BYDAY"):
+        byday = rrule["BYDAY"][0]
+        next_date = find_next_monthly(start_date, byday)
+        i = 1
+        while next_date < until:
+            next_event = event.copy()
+            next_event["date"] = next_date.date().strftime("%Y-%m-%d")
+            next_event["uid"] = sha256(str(event["uid"]+f"-{i}").encode("utf-8")).hexdigest()
+            events.append(next_event)
+            next_date = find_next_monthly(next_date, byday)
+            i += 1
+    elif rrule.get("FREQ") == ['WEEKLY'] and rrule.get("BYDAY"):
+        byday = rrule["BYDAY"][0]
+        next_date = find_next_weekly(start_date, byday)
+        i = 1
+        while next_date < until:
+            next_event = event.copy()
+            next_event["date"] = next_date.date().strftime("%Y-%m-%d")
+            next_event["uid"] = sha256(str(event["uid"]+f"-{i}").encode("utf-8")).hexdigest()
+            events.append(next_event)
+            next_date = find_next_weekly(next_date, byday)
+            i += 1
+    return events
+
+def find_next_monthly(start_date: datetime, byday: str):
+    # Parse the byday string (e.g. "3TH" -> 3rd Thursday)
+    week = int(byday[:-2])
+    dow = byday[-2:]
+    if dow == "MO":
+        dow = 0
+    elif dow == "TU":
+        dow = 1
+    elif dow == "WE":
+        dow = 2
+    elif dow == "TH":
+        dow = 3
+    elif dow == "FR":
+        dow = 4
+    elif dow == "SA":
+        dow = 5
+    elif dow == "SU":
+        dow = 6
+    # Get the first day of next month
+    if start_date.month == 12:
+        next_month = start_date.replace(year=start_date.year + 1, month=1, day=1)
+    else:
+        next_month = start_date.replace(month=start_date.month + 1, day=1)
+    # Find the first occurrence of the target day of week
+    first_day = next_month.weekday()
+    days_to_add = (dow - first_day) % 7
+    first_occurrence = next_month.replace(day=1 + days_to_add)
+    # Add weeks to get to the nth occurrence
+    target_date = first_occurrence.replace(day=first_occurrence.day + (week - 1) * 7)
+    return target_date
+
+def find_next_weekly(start_date: datetime, byday: str):
+    # Parse the byday string (e.g. "MO" -> Monday)
+    dow = byday
+    if dow == "MO":
+        dow = 0
+    elif dow == "TU":
+        dow = 1
+    elif dow == "WE":
+        dow = 2
+    elif dow == "TH":
+        dow = 3
+    elif dow == "FR":
+        dow = 4
+    elif dow == "SA":
+        dow = 5
+    elif dow == "SU":
+        dow = 6
+    cur = start_date + timedelta(days=1)
+    while cur.weekday() != dow:
+        cur += timedelta(days=1)
+    return cur
 
 def get_neighborhood(location: str, logger=None):
     if not MAPS_API_KEY or not location:
