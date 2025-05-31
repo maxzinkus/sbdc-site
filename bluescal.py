@@ -1,14 +1,15 @@
+from datetime import datetime, timedelta, timezone
+from functools import lru_cache
+from hashlib import sha256
+from html.parser import HTMLParser
 import os
 import re
 import time
 from typing import List
-from hashlib import sha256
-from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
-from html.parser import HTMLParser
 
-import requests
 import icalendar as ical
+import requests
 from bs4 import BeautifulSoup
 
 CAL_URL = "https://calendar.google.com/calendar/ical/seattlebluesdancecollective%40gmail.com/public/basic.ics"
@@ -17,6 +18,7 @@ CAL_FILE = "bluescal.ics"
 MAPS_API_KEY = os.getenv("MAPS_API_KEY")
 
 EVENTS_DB = {}
+NEIGHBORHOODS_DB = {}
 
 def refresh(logger=None):
     global MAPS_API_KEY
@@ -212,6 +214,10 @@ def find_next_weekly(start_date: datetime, byday: str):
     return cur
 
 def get_neighborhood(location: str, logger=None):
+    global NEIGHBORHOODS_DB
+    if NEIGHBORHOODS_DB.get(location):
+        app.logger.info("Using cached neighborhood for %s", location)
+        return NEIGHBORHOODS_DB[location]
     if not MAPS_API_KEY or not location:
         return ""
     response = requests.get(f"https://maps.googleapis.com/maps/api/geocode/json?address={requests.utils.quote(location)}&key={MAPS_API_KEY}")
@@ -220,8 +226,9 @@ def get_neighborhood(location: str, logger=None):
         if data["status"] == "OK" and data["results"]:
             components = data["results"][0]["address_components"]
             for comp in components:
-                if "neighborhood" in comp["types"]:
-                    return str(comp["long_name"])
+                if "neighborhood" in comp["types"] and comp.get("long_name"):
+                    NEIGHBORHOODS_DB[location] = str(comp["long_name"])
+                    return NEIGHBORHOODS_DB[location]
         else:
             if logger:
                 logger.error("Failed to get neighborhood for %s: %s", location, data["status"])
