@@ -47,7 +47,8 @@ def refresh(logger=None):
             calendar = ical.Calendar.from_ical(response.text)
             return calendar
     except Exception as e:
-        logger.error("Error fetching calendar: %s", e)
+        if logger:
+            logger.error("Error fetching calendar: %s", e)
     if logger:
         logger.error("Failed to fetch calendar from %s", CAL_URL)
     return None
@@ -119,7 +120,8 @@ def process_events(calendar: ical.Calendar, logger=None):
                         link.string = link.text[:40] + '[...]'
                 event["description"] = str(soup)
             except HTMLParser.HTMLParseError as e:
-                app.logger.error(f"HTML parsing error: {e}")
+                if logger:
+                    logger.error("HTML parsing error: %s", e)
                 # If parsing fails, use the original description
                 event["description"] = description
         sequence = handle_recurring_event(event, event["dtstart"], cal_event.get("RRULE"), logger)
@@ -216,7 +218,8 @@ def find_next_weekly(start_date: datetime, byday: str):
 def get_neighborhood(location: str, logger=None):
     global NEIGHBORHOODS_DB
     if NEIGHBORHOODS_DB.get(location):
-        app.logger.info("Using cached neighborhood for %s", location)
+        if logger:
+            logger.info("Using cached neighborhood for %s", location)
         return NEIGHBORHOODS_DB[location]
     if not MAPS_API_KEY or not location:
         return ""
