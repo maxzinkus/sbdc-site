@@ -57,7 +57,7 @@ def process_events(calendar: ical.Calendar, logger=None):
     global EVENTS_DB
     events = []
     for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events),
-                                         key=lambda x: x["DTSTART"] if type(x["DTSTART"]) is datetime.date else x["DTSTART"].date())):
+                                         key=lambda x: x["DTSTART"].dt.date() if type(x["DTSTART"]) is ical.prop.vDDDTypes else x["DTSTART"].date() if type(x["DTSTART"]) is datetime.datetime else x["DTSTART"])):
         event = {}
         event["id"] = str(i)
         uid_val = cal_event.get("UID", str(cal_event))
