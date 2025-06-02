@@ -191,7 +191,7 @@ def find_next_monthly(start_date: datetime, byday: str):
     first_occurrence = next_month.replace(day=1 + days_to_add)
     # Add weeks to get to the nth occurrence
     target_date = first_occurrence.replace(day=first_occurrence.day + (week - 1) * 7)
-    return target_date
+    return target_date.date()
 
 def find_next_weekly(start_date: datetime, byday: str):
     # Parse the byday string (e.g. "MO" -> Monday)
