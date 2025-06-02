@@ -56,7 +56,8 @@ def refresh(logger=None):
 def process_events(calendar: ical.Calendar, logger=None):
     global EVENTS_DB
     events = []
-    for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: x["DTSTART"].dt.date())):
+    for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events),
+                                         key=lambda x: x["DTSTART"] if type(x["DTSTART"]) is datetime.date else x["DTSTART"].date())):
         event = {}
         event["id"] = str(i)
         uid_val = cal_event.get("UID", str(cal_event))
@@ -137,12 +138,12 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
     until = rrule.get("UNTIL", [start_date + timedelta(days=180)])
     if not until or not until[0]:
         return events
-    until = until[0]
+    until = until[0].date()
     if rrule.get("FREQ") == ['MONTHLY'] and rrule.get("BYDAY"):
         byday = rrule["BYDAY"][0]
         next_date = find_next_monthly(start_date, byday)
         i = 1
-        while next_date < until.date():
+        while next_date < until:
             next_event = event.copy()
             next_event["date"] = next_date.date().strftime("%Y-%m-%d")
             next_event["uid"] = sha256(str(event["uid"]+f"-{i}").encode("utf-8")).hexdigest()
@@ -153,7 +154,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
         byday = rrule["BYDAY"][0]
         next_date = find_next_weekly(start_date, byday)
         i = 1
-        while next_date < until.date():
+        while next_date < until:
             next_event = event.copy()
             next_event["date"] = next_date.date().strftime("%Y-%m-%d")
             next_event["uid"] = sha256(str(event["uid"]+f"-{i}").encode("utf-8")).hexdigest()
