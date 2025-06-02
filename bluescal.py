@@ -56,8 +56,7 @@ def refresh(logger=None):
 def process_events(calendar: ical.Calendar, logger=None):
     global EVENTS_DB
     events = []
-    for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events),
-                                         key=lambda x: x["DTSTART"].dt if type(x["DTSTART"]) is ical.prop.vDDDTypes else x["DTSTART"].date() if type(x["DTSTART"]) is datetime.datetime else x["DTSTART"])):
+    for i, cal_event in enumerate(filter(lambda x: x.get("DTSTART"), calendar.events)):
         event = {}
         event["id"] = str(i)
         uid_val = cal_event.get("UID", str(cal_event))
@@ -128,7 +127,7 @@ def process_events(calendar: ical.Calendar, logger=None):
         sequence = handle_recurring_event(event, event["dtstart"], cal_event.get("RRULE"), logger)
         EVENTS_DB[event["uid"]] = sequence
         events.extend(sequence)
-    return events
+    return list(sorted(events, key=lambda e: e["dtstart"]))
 
 def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.vRecur, logger=None):
     # takes an event with rrules and returns a list of events
