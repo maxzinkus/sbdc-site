@@ -56,7 +56,7 @@ def refresh(logger=None):
 def process_events(calendar: ical.Calendar, logger=None):
     global EVENTS_DB
     events = []
-    for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: x["DTSTART"].dt)):
+    for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: x["DTSTART"].dt.date())):
         event = {}
         event["id"] = str(i)
         uid_val = cal_event.get("UID", str(cal_event))
@@ -66,11 +66,11 @@ def process_events(calendar: ical.Calendar, logger=None):
         if EVENTS_DB.get(event["uid"], []) and EVENTS_DB[event["uid"]][0]["title"] == event["title"] and EVENTS_DB[event["uid"]][0]["neighborhood"] != "":
             events.extend(EVENTS_DB[event["uid"]])
             continue
-        
+
         # Parse the iCalendar date strings into datetime objects
         dtstart = cal_event.get("DTSTART")
         dtend = cal_event.get("DTEND")
-        
+
         def to_local_time(dt):
             if dt is None:
                 return None
@@ -97,7 +97,7 @@ def process_events(calendar: ical.Calendar, logger=None):
 
         event["location"] = cal_event.get("LOCATION", "")
         event["neighborhood"] = get_neighborhood(event["location"], logger)
-        
+
         features = set()
         if "live music" in cal_event.get("DESCRIPTION", "").lower():
             features.add("Live Music")
@@ -105,7 +105,7 @@ def process_events(calendar: ical.Calendar, logger=None):
             features.add("Lesson")
         # TODO get features from an LLM and cache in database
         event["features"] = list(features)
-        
+
         description = cal_event.get("DESCRIPTION", "")
         if description:
             try:
