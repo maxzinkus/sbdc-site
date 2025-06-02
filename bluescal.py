@@ -144,7 +144,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
         i = 1
         while next_date < until:
             next_event = event.copy()
-            next_event["date"] = next_date.date().strftime("%Y-%m-%d")
+            next_event["date"] = next_date.strftime("%Y-%m-%d")
             next_event["uid"] = sha256(str(event["uid"]+f"-{i}").encode("utf-8")).hexdigest()
             events.append(next_event)
             next_date = find_next_monthly(next_date, byday)
@@ -155,7 +155,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
         i = 1
         while next_date < until:
             next_event = event.copy()
-            next_event["date"] = next_date.date().strftime("%Y-%m-%d")
+            next_event["date"] = next_date.strftime("%Y-%m-%d")
             next_event["uid"] = sha256(str(event["uid"]+f"-{i}").encode("utf-8")).hexdigest()
             events.append(next_event)
             next_date = find_next_weekly(next_date, byday)
