@@ -162,8 +162,10 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
             i += 1
     return events
 
-def find_next_monthly(start_date: datetime, byday: str):
+def find_next_monthly(start_date: datetime.date, byday: str):
     # Parse the byday string (e.g. "3TH" -> 3rd Thursday)
+    if type(start_date) is datetime.datetime:
+        start_date = start_date.date()
     week = int(byday[:-2])
     dow = byday[-2:]
     if dow == "MO":
@@ -191,7 +193,7 @@ def find_next_monthly(start_date: datetime, byday: str):
     first_occurrence = next_month.replace(day=1 + days_to_add)
     # Add weeks to get to the nth occurrence
     target_date = first_occurrence.replace(day=first_occurrence.day + (week - 1) * 7)
-    return target_date.date()
+    return target_date
 
 def find_next_weekly(start_date: datetime, byday: str):
     # Parse the byday string (e.g. "MO" -> Monday)
