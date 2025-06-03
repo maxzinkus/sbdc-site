@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, date, timedelta, timezone
 from functools import lru_cache
 from hashlib import sha256
 from html.parser import HTMLParser
@@ -28,7 +28,7 @@ def refresh(logger=None):
         if os.path.exists(CAL_FILE):
             if logger:
                 logger.info("Calendar file exists")
-            if os.path.getmtime(CAL_FILE) > time.time() - 10:
+            if os.path.getmtime(CAL_FILE) > time.time() - 60:
                 if logger:
                     logger.info("Using cached calendar file")
                 with open(CAL_FILE, "r") as f:
@@ -39,7 +39,7 @@ def refresh(logger=None):
         if logger:
             logger.info("Fetching calendar from %s", CAL_URL)
         response = requests.get(CAL_URL)
-        if response.status_code == 200 and len(response.text) > 0 and len(response.text) < 1_048_576: # 1MiB
+        if response.status_code == 200 and len(response.text) > 0 and len(response.text) < 1_048_576 * 4: # 4MiB
             if logger:
                 logger.info("Successfully fetched calendar (%d bytes)", len(response.text))
             with open(CAL_FILE, "w") as f:
@@ -56,39 +56,31 @@ def refresh(logger=None):
 def process_events(calendar: ical.Calendar, logger=None):
     global EVENTS_DB
     events = []
-    for i, cal_event in enumerate(filter(lambda x: x.get("DTSTART"), calendar.events)):
+    if calendar is None:
+        return events
+    for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: fix_datetime(x["DTSTART"]))):
         event = {}
         event["id"] = str(i)
         uid_val = cal_event.get("UID", str(cal_event))
         event["uid"] = sha256(str(uid_val).encode("utf-8")).hexdigest()
         event["title"] = cal_event.get("SUMMARY", "")
         # already in cache
-        if EVENTS_DB.get(event["uid"], []) and EVENTS_DB[event["uid"]][0]["title"] == event["title"] and EVENTS_DB[event["uid"]][0]["neighborhood"] != "":
+        if EVENTS_DB.get(event["uid"], []) and EVENTS_DB[event["uid"]][0]["title"] == event["title"]:
+            if EVENTS_DB[event["uid"]][0]["location"] and EVENTS_DB[event["uid"]][0]["neighborhood"] == "":
+                EVENTS_DB[event["uid"]][0]["neighborhood"] = get_neighborhood(EVENTS_DB[event["uid"]][0]["location"], logger)
             events.extend(EVENTS_DB[event["uid"]])
             continue
 
         # Parse the iCalendar date strings into datetime objects
-        dtstart = cal_event.get("DTSTART")
-        dtend = cal_event.get("DTEND")
+        dtstart = fix_datetime(cal_event.get("DTSTART"))
+        dtend = fix_datetime(cal_event.get("DTEND"))
 
-        def to_local_time(dt):
-            if type(dt) is datetime:
-                if not dt.dt.tzinfo:
-                    # Case 1: No timezone info, assume UTC
-                    return dt.dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
-                elif dt.dt.tzinfo.key == "America/Los_Angeles":
-                    # Case 3: Already in Pacific time
-                    return dt.dt
-                else:
-                    # Case 2: Has timezone info, convert to Pacific
-                    return dt.dt.astimezone(ZoneInfo("America/Los_Angeles"))
-            return dt
-        local_start = to_local_time(dtstart)
-        local_end = to_local_time(dtend) if dtend else local_start
+        local_start = fix_datetime(dtstart)
+        local_end = fix_datetime(dtend) if dtend else local_start
         if local_start is None:
             continue
 
-        event["dtstart"] = dtstart.dt
+        event["dtstart"] = local_start
         event["date"] = local_start.strftime("%Y-%m-%d")
         if local_start != local_end:
             event["time"] = local_start.strftime("%-I:%M %p") + " - " + local_end.strftime("%-I:%M %p")
@@ -96,17 +88,20 @@ def process_events(calendar: ical.Calendar, logger=None):
             event["time"] = local_start.strftime("%-I:%M %p")
 
         event["location"] = cal_event.get("LOCATION", "")
-        event["neighborhood"] = get_neighborhood(event["location"], logger)
+        if not event["location"]:
+            event["neighborhood"] = ""
+        else:
+            event["neighborhood"] = get_neighborhood(event["location"], logger)
 
         features = set()
-        if "live music" in cal_event.get("DESCRIPTION", "").lower():
+        if "live music" in str(cal_event.get("DESCRIPTION", "")).lower():
             features.add("Live Music")
-        if "lesson" in cal_event.get("DESCRIPTION", "").lower():
+        if "lesson" in str(cal_event.get("DESCRIPTION", "")).lower():
             features.add("Lesson")
         # TODO get features from an LLM and cache in database
         event["features"] = list(features)
 
-        description = cal_event.get("DESCRIPTION", "")
+        description = str(cal_event.get("DESCRIPTION", ""))
         if description:
             try:
                 # Convert plain text URLs to links
@@ -129,6 +124,19 @@ def process_events(calendar: ical.Calendar, logger=None):
         events.extend(sequence)
     return list(sorted(events, key=lambda e: e["dtstart"]))
 
+def fix_datetime(vddd):
+    if type(vddd) is ical.prop.vDDDTypes:
+        dt = vddd.dt
+    else:
+        dt = vddd # either a date or a datetime
+    if type(dt) is date:
+        dt = datetime.combine(vddd, datetime.min.time())
+        dt = dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
+    if not dt.tzinfo:
+        return dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
+    else:
+        return dt.astimezone(ZoneInfo("America/Los_Angeles"))
+
 def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.vRecur, logger=None):
     # takes an event with rrules and returns a list of events
     events = [event]
@@ -137,7 +145,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
     until = rrule.get("UNTIL", [start_date + timedelta(days=180)])
     if not until or not until[0]:
         return events
-    until = until[0].date()
+    until = fix_datetime(until[0])
     if rrule.get("FREQ") == ['MONTHLY'] and rrule.get("BYDAY"):
         byday = rrule["BYDAY"][0]
         next_date = find_next_monthly(start_date, byday)
@@ -162,10 +170,8 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
             i += 1
     return events
 
-def find_next_monthly(start_date, byday: str):
+def find_next_monthly(start_date: datetime, byday: str):
     # Parse the byday string (e.g. "3TH" -> 3rd Thursday)
-    if type(start_date) is datetime:
-        start_date = start_date.date()
     week = int(byday[:-2])
     dow = byday[-2:]
     if dow == "MO":
@@ -229,11 +235,16 @@ def get_neighborhood(location: str, logger=None):
     if response.status_code == 200:
         data = response.json()
         if data["status"] == "OK" and data["results"]:
-            components = data["results"][0]["address_components"]
-            for comp in components:
-                if "neighborhood" in comp["types"] and comp.get("long_name"):
-                    NEIGHBORHOODS_DB[location] = str(comp["long_name"])
-                    return NEIGHBORHOODS_DB[location]
+            try:
+                components = data["results"][0]["address_components"]
+                for comp in components:
+                    if "neighborhood" in comp["types"] and comp.get("long_name"):
+                        NEIGHBORHOODS_DB[location] = str(comp["long_name"])
+                        return NEIGHBORHOODS_DB[location]
+            except (KeyError, TypeError) as e:
+                if logger:
+                    logger.error("Failed to get neighborhood for %s: %s (%s)", location, data["status"], e)
+                return ""
         else:
             if logger:
                 logger.error("Failed to get neighborhood for %s: %s", location, data["status"])
