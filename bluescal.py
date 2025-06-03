@@ -118,7 +118,7 @@ def process_events(calendar: ical.Calendar, logger=None):
                     logger.error("HTML parsing error: %s", e)
                 # If parsing fails, use the original description
                 event["description"] = description
-        sequence = (event, event["dtstart"], cal_event.get("RRULE"), logger)
+        sequence = handle_recurring_event(event, event["dtstart"], cal_event.get("RRULE"), logger)
         EVENTS_DB[event["uid"]] = sequence
         events.extend(sequence)
     return events
@@ -138,6 +138,8 @@ def fix_datetime(vddd):
 
 def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.vRecur, logger=None):
     # takes an event with rrules and returns a list of events
+    if logger:
+        logger.info("Handling recurring event %s", event["title"])
     events = [event]
     if not rrule:
         return events
