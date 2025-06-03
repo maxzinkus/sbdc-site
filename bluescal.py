@@ -72,17 +72,17 @@ def process_events(calendar: ical.Calendar, logger=None):
         dtend = cal_event.get("DTEND")
 
         def to_local_time(dt):
-            if dt is None:
-                return None
-            if not dt.dt.tzinfo:
-                # Case 1: No timezone info, assume UTC
-                return dt.dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
-            elif dt.dt.tzinfo.key == "America/Los_Angeles":
-                # Case 3: Already in Pacific time
-                return dt.dt
-            else:
-                # Case 2: Has timezone info, convert to Pacific
-                return dt.dt.astimezone(ZoneInfo("America/Los_Angeles"))
+            if type(dt) is datetime:
+                if not dt.dt.tzinfo:
+                    # Case 1: No timezone info, assume UTC
+                    return dt.dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
+                elif dt.dt.tzinfo.key == "America/Los_Angeles":
+                    # Case 3: Already in Pacific time
+                    return dt.dt
+                else:
+                    # Case 2: Has timezone info, convert to Pacific
+                    return dt.dt.astimezone(ZoneInfo("America/Los_Angeles"))
+            return dt
         local_start = to_local_time(dtstart)
         local_end = to_local_time(dtend) if dtend else local_start
         if local_start is None:
