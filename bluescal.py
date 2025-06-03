@@ -58,9 +58,8 @@ def process_events(calendar: ical.Calendar, logger=None):
     events = []
     if calendar is None:
         return events
-    for i, cal_event in enumerate(sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: fix_datetime(x["DTSTART"]))):
+    for cal_event in sorted(filter(lambda x: x.get("DTSTART"), calendar.events), key=lambda x: fix_datetime(x["DTSTART"])):
         event = {}
-        event["id"] = str(i)
         uid_val = cal_event.get("UID", str(cal_event))
         event["uid"] = sha256(str(uid_val).encode("utf-8")).hexdigest()
         event["title"] = cal_event.get("SUMMARY", "")
