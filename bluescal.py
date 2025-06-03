@@ -164,7 +164,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
 
 def find_next_monthly(start_date: datetime.date, byday: str):
     # Parse the byday string (e.g. "3TH" -> 3rd Thursday)
-    if type(start_date) is datetime.datetime:
+    if type(start_date) is datetime:
         start_date = start_date.date()
     week = int(byday[:-2])
     dow = byday[-2:]
