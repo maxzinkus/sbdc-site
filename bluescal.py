@@ -119,7 +119,7 @@ def process_events(calendar: ical.Calendar, logger=None):
                     logger.error("HTML parsing error: %s", e)
                 # If parsing fails, use the original description
                 event["description"] = description
-        sequence = handle_recurring_event(event, event["dtstart"], cal_event.get("RRULE"), logger)
+        sequence = (event, event["dtstart"], cal_event.get("RRULE"), logger)
         EVENTS_DB[event["uid"]] = sequence
         events.extend(sequence)
     return list(sorted(events, key=lambda e: e["dtstart"]))
@@ -130,7 +130,7 @@ def fix_datetime(vddd):
     else:
         dt = vddd # either a date or a datetime
     if type(dt) is date:
-        dt = datetime.combine(vddd, datetime.min.time())
+        dt = datetime.combine(dt, datetime.min.time())
         dt = dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
     if not dt.tzinfo:
         return dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
