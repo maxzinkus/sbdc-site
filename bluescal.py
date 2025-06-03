@@ -122,7 +122,7 @@ def process_events(calendar: ical.Calendar, logger=None):
         sequence = (event, event["dtstart"], cal_event.get("RRULE"), logger)
         EVENTS_DB[event["uid"]] = sequence
         events.extend(sequence)
-    return list(sorted(events, key=lambda e: e["dtstart"]))
+    return events
 
 def fix_datetime(vddd):
     if type(vddd) is ical.prop.vDDDTypes:
