@@ -104,7 +104,7 @@ def process_events(calendar: ical.Calendar, logger=None):
         if description:
             try:
                 # Convert plain text URLs to links
-                url_pattern = re.compile(r'(?<!href=")(?<!src=")(https?://\S+)(?!")')
+                url_pattern = re.compile(r'(?<![="\'])(https?://[^\s<>"\']+)(?![="\'])')
                 description = url_pattern.sub(r'<a href="\1">\1</a>', description)
                 soup = BeautifulSoup(description, 'html.parser')
                 for link in soup.find_all('a'):
