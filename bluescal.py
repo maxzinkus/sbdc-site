@@ -89,7 +89,7 @@ def process_events(calendar: ical.Calendar, logger=None):
             continue
 
         event["dtstart"] = dtstart.dt
-        event["date"] = local_start.date().strftime("%Y-%m-%d")
+        event["date"] = local_start.strftime("%Y-%m-%d")
         if local_start != local_end:
             event["time"] = local_start.strftime("%-I:%M %p") + " - " + local_end.strftime("%-I:%M %p")
         else:
@@ -162,7 +162,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
             i += 1
     return events
 
-def find_next_monthly(start_date: datetime.date, byday: str):
+def find_next_monthly(start_date, byday: str):
     # Parse the byday string (e.g. "3TH" -> 3rd Thursday)
     if type(start_date) is datetime:
         start_date = start_date.date()
