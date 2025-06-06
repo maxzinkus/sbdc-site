@@ -19,10 +19,11 @@ def refresh_calendar(ipc, logger=None):
         try:
             calendar = bluescal.refresh(logger)
             ipc.put(calendar)
+            time.sleep(900)
         except Exception as e:
             if logger:
                 logger.error("Error refreshing calendar: %s", e)
-        time.sleep(60)
+            time.sleep(60)
 
 @app.route('/')
 def index():
