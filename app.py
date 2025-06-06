@@ -32,6 +32,9 @@ def index():
     if not ipc:
         app.config['IPC_QUEUE'] = Queue()
         ipc = app.config['IPC_QUEUE']
+        app.logger.info("Starting refresher")
+        refresher = Process(target=refresh_calendar, args=(ipc,), daemon=True)
+        refresher.start()
         calendar = cached_calendar
         if not calendar:
             calendar = bluescal.refresh(app.logger)
