@@ -138,8 +138,6 @@ def fix_datetime(vddd):
 
 def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.vRecur, logger=None):
     # takes an event with rrules and returns a list of events
-    if logger:
-        logger.info("Handling recurring event %s", event["title"])
     events = [event]
     if not rrule:
         return events
@@ -148,6 +146,8 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
         return events
     until = fix_datetime(until[0])
     if rrule.get("FREQ") == ['MONTHLY'] and rrule.get("BYDAY"):
+        if logger:
+            logger.info("Handling monthly recurring event %s", event["title"])
         byday = rrule["BYDAY"][0]
         next_date = find_next_monthly(start_date, byday)
         i = 1
@@ -159,6 +159,8 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
             next_date = find_next_monthly(next_date, byday)
             i += 1
     elif rrule.get("FREQ") == ['WEEKLY'] and rrule.get("BYDAY"):
+        if logger:
+            logger.info("Handling weekly recurring event %s", event["title"])
         byday = rrule["BYDAY"][0]
         next_date = find_next_weekly(start_date, byday)
         i = 1
