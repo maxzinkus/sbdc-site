@@ -9,10 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.png') }}">
-    <script id="mcjs">!function(c,h,i,m,p){m=c.createElement(h),p=c.getElementsByTagName(h)[0],m.async=1,m.src=i,p.parentNode.insertBefore(m,p)}(document,"script","https://chimpstatic.com/mcjs-connected/js/users/dd1397064102b577a9a8eac1a/654ff9f5d485a77d2bc107e3d.js");</script>
     {% block head %}{% endblock %}
 </head>
 <body>
+    <div class="newsletter-banner">
+        <a href="https://mailchi.mp/631a7bba1bea/seattlebluesdancecollective" target="_blank" rel="noopener">
+            Sign up for our newsletter →
+        </a>
+    </div>
     <!-- Menu -->
     <button class="menu-toggle">
         <span></span>
@@ -53,6 +57,5 @@
     <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
     {% block content %}{% endblock %}
     {% block scripts %}{% endblock %}
-
 </body>
 </html>
