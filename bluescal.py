@@ -118,6 +118,10 @@ def process_events(calendar: ical.Calendar, logger=None):
                     logger.error("HTML parsing error: %s", e)
                 # If parsing fails, use the original description
                 event["description"] = description
+        try:
+            cal_event.get("DTSTART").dt.time()
+        except AttributeError:
+            event["time"] = "All Day"
         sequence = handle_recurring_event(event, event["dtstart"], cal_event.get("RRULE"), logger)
         EVENTS_DB[event["uid"]] = sequence
         events.extend(sequence)
@@ -147,7 +151,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
     until = fix_datetime(until[0])
     if rrule.get("FREQ") == ['MONTHLY'] and rrule.get("BYDAY"):
         if logger:
-            logger.info("Handling monthly recurring event %s", event["title"])
+            logger.debug("Handling monthly recurring event %s", event["title"])
         byday = rrule["BYDAY"][0]
         next_date = find_next_monthly(start_date, byday)
         i = 1
@@ -160,7 +164,7 @@ def handle_recurring_event(event: dict, start_date: datetime, rrule: ical.prop.v
             i += 1
     elif rrule.get("FREQ") == ['WEEKLY'] and rrule.get("BYDAY"):
         if logger:
-            logger.info("Handling weekly recurring event %s", event["title"])
+            logger.debug("Handling weekly recurring event %s", event["title"])
         byday = rrule["BYDAY"][0]
         next_date = find_next_weekly(start_date, byday)
         i = 1
