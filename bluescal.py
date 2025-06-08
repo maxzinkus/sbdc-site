@@ -93,9 +93,10 @@ def process_events(calendar: ical.Calendar, logger=None):
             event["neighborhood"] = get_neighborhood(event["location"], logger)
 
         features = set()
-        if "live music" in str(cal_event.get("DESCRIPTION", "")).lower():
+        if ("live music" in str(cal_event.get("DESCRIPTION", "")).lower() or "live music" in str(cal_event.get("SUMMARY", "")).lower() or
+            " band" in str(cal_event.get("DESCRIPTION", "")).lower() or " band" in str(cal_event.get("SUMMARY", "")).lower()):
             features.add("Live Music")
-        if "lesson" in str(cal_event.get("DESCRIPTION", "")).lower():
+        if "lesson" in str(cal_event.get("DESCRIPTION", "")).lower() or "lesson" in str(cal_event.get("SUMMARY", "")).lower():
             features.add("Lesson")
         # TODO get features from an LLM and cache in database
         event["categories"] = list(features)
