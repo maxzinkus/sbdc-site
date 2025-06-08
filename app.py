@@ -3,7 +3,7 @@ import time
 import logging
 from multiprocessing import Process, Queue, freeze_support
 
-from flask import Flask, render_template, flash
+from flask import Flask, render_template, flash, jsonify
 
 import bluescal
 
@@ -27,7 +27,6 @@ def refresh_calendar(ipc, logger=None):
 
 @app.route('/')
 def index():
-    global cached_calendar
     # Get the queue from the current process
     ipc = app.config.get('IPC_QUEUE')
     if not ipc:
@@ -36,28 +35,16 @@ def index():
         app.logger.info("Starting refresher")
         refresher = Process(target=refresh_calendar, args=(ipc,), daemon=True)
         refresher.start()
-        calendar = cached_calendar
-        if not calendar:
-            calendar = bluescal.refresh(app.logger)
-    else:
-        try:
-            calendar = ipc.get_nowait() if not ipc.empty() else cached_calendar
-            if calendar:
-                cached_calendar = calendar
-        except:
-            calendar = cached_calendar
-            if not calendar:
-                calendar = bluescal.refresh(app.logger)
-    # TODO start supporting date ranges so that we don't have to fetch the full calendar every time
-    if not calendar:
-        flash("No events found; a sync error may have occurred.")
-        app.logger.error("No events found; a sync error may have occurred.")
-        return render_template('index.html', events=[])
-    events = bluescal.process_events(calendar, app.logger)
-    if not events:
-        flash("No events found; a sync error may have occurred.")
-        app.logger.error("No events found; a sync error may have occurred.")
-    return render_template('index.html', events=events)
+    return render_template('index.html')
+
+@app.route('/events.json')
+def events_json():
+    global cached_calendar
+    if not cached_calendar:
+        # TODO start supporting date ranges so that we don't have to fetch the full calendar every time
+        cached_calendar = bluescal.refresh(app.logger)
+    events = bluescal.process_events(cached_calendar, app.logger)
+    return jsonify(events)
 
 @app.route('/recurring-events')
 def recurring_events():

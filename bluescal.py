@@ -98,7 +98,7 @@ def process_events(calendar: ical.Calendar, logger=None):
         if "lesson" in str(cal_event.get("DESCRIPTION", "")).lower():
             features.add("Lesson")
         # TODO get features from an LLM and cache in database
-        event["features"] = list(features)
+        event["categories"] = list(features)
 
         description = str(cal_event.get("DESCRIPTION", ""))
         if description:
