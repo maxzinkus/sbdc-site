@@ -111,7 +111,7 @@ def process_events(calendar: ical.Calendar, logger=None):
                 for link in soup.find_all('a'):
                     link['target'] = '_blank'
                     link['rel'] = 'noopener'
-                    if len(link.text) > 40 and link.text == link.get("href", ""):
+                    if len(link.text) > 40 and link.text == link.get("href", "") and not '@' in link.text:
                         link.string = link.text[:40] + '[...]'
                 event["description"] = str(soup)
             except HTMLParser.HTMLParseError as e:
