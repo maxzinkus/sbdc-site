@@ -31,6 +31,9 @@
             </div>
 
             <div class="calendar">
+                <div class="loading-overlay">
+                    <div class="loading-text">Loading...</div>
+                </div>
                 <div class="calendar-header">
                     <h2>April 2025</h2>
                     <div class="calendar-controls">
@@ -1013,6 +1016,12 @@
         // Start initialization
         initialize().catch(error => {
             console.error('Failed to initialize:', error);
+        }).finally(() => {
+            // Remove loading overlay after initialization completes
+            const loadingOverlay = document.querySelector('.loading-overlay');
+            if (loadingOverlay) {
+                loadingOverlay.remove();
+            }
         });
     </script>
 {% endblock %}

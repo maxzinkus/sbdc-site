@@ -455,18 +455,20 @@ html {
 }
 
 .calendar-day.highlight.past {
-    background-color: #c0c0c0;
-    color: #666;
-    border-color: #b0b0b0;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: rgba(255, 193, 7, 0.3);
+    color: #856404;
 }
 
 .calendar-day-header {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-weight: 600;
-    padding: 0.5rem;
     color: var(--text-light);
-    font-size: 0.8rem;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 /* Remove old modal styles */
@@ -847,6 +849,28 @@ ul.flashes {
 }
 
 .newsletter-banner a:hover {
+    opacity: 0.8;
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: var(--border-radius);
+}
+
+.loading-text {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-color);
     opacity: 0.8;
 }
 
