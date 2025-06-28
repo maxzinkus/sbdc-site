@@ -377,21 +377,28 @@ html {
     gap: 0.25rem;
     width: 100%;
     box-sizing: border-box;
+    min-width: 0;
 }
 
 @media (max-width: 768px) {
     .calendar-grid {
-        gap: 0.15rem;
+        gap: 0.1rem;
     }
     
     .calendar-day {
-        padding: 0.25rem;
-        font-size: 0.8rem;
+        padding: 0.2rem;
+        font-size: 0.75rem;
+        min-width: 0;
     }
     
     .calendar-day-header {
-        padding: 0.25rem;
-        font-size: 0.7rem;
+        padding: 0.2rem;
+        font-size: 0.65rem;
+        min-width: 0;
+    }
+    
+    .calendar {
+        overflow-x: hidden;
     }
 }
 
