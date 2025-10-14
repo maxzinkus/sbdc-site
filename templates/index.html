@@ -35,7 +35,7 @@
                     <div class="loading-text">Loading...</div>
                 </div>
                 <div class="calendar-header">
-                    <h2>April 2025</h2>
+                    <h2></h2>
                     <div class="calendar-controls">
                         <button aria-label="Previous month"></button>
                         <button aria-label="Next month"></button>
@@ -49,9 +49,6 @@
                     <div class="calendar-day-header">Thu</div>
                     <div class="calendar-day-header">Fri</div>
                     <div class="calendar-day-header">Sat</div>
-                    <div class="calendar-day">1</div>
-                    <div class="calendar-day">2</div>
-                    <div class="calendar-day has-event">3</div>
                 </div>
             </div>
         </div>
@@ -104,12 +101,14 @@
                 const renderPromise = Promise.all([
                     new Promise(resolve => {
                         renderEvents();
-                        // Events are rendered synchronously, so we can resolve immediately
                         resolve();
                     }),
                     new Promise(resolve => {
                         renderCalendar();
-                        // Calendar is rendered synchronously, so we can resolve immediately
+                        resolve();
+                    }),
+                    new Promise(resolve => {
+                        loadUrlFragment();
                         resolve();
                     })
                 ]);
@@ -117,11 +116,6 @@
                 // Setup event listeners and filters
                 setupEventListeners();
                 setupFilterToggle();
-
-                // Check URL fragment after everything is rendered
-                renderPromise.then(() => {
-                    loadUrlFragment();
-                });
             }
 
             // Filter events based on active filters
@@ -918,7 +912,7 @@
             }
 
             // Function to check URL fragment and show corresponding event or date
-            function loadUrlFragment() {
+            async function loadUrlFragment() {
                 const fragment = window.location.hash.slice(1); // Remove the # symbol
                 if (!fragment) return;
 
