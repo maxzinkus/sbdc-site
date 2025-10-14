@@ -1,9 +1,10 @@
 import os
 import time
 import logging
+from datetime import date
 from multiprocessing import Process, Queue, freeze_support
 
-from flask import Flask, render_template, flash, jsonify
+from flask import Flask, request, render_template, flash, jsonify
 
 import bluescal
 
@@ -43,7 +44,10 @@ def events_json():
     if not cached_calendar:
         # TODO start supporting date ranges so that we don't have to fetch the full calendar every time
         cached_calendar = bluescal.refresh(app.logger)
-    events = bluescal.process_events(cached_calendar, app.logger)
+    today = date.today()
+    month = request.args.get("month", default=today.month, type=int)
+    year = request.args.get("year", default=today.year, type=int)
+    events = bluescal.process_events(cached_calendar, month, year, app.logger)
     return jsonify(events)
 
 @app.route('/recurring-events')
@@ -58,10 +62,6 @@ def about():
 def instructors():
     return render_template('instructors.html')
 
-@app.route('/gallery')
-def gallery():
-    return render_template('gallery.html')
-
 @app.route('/history')
 def history():
     return render_template('history.html')
@@ -69,10 +69,6 @@ def history():
 @app.route('/music')
 def music():
     return render_template('music.html')
-
-@app.route('/donate')
-def donate():
-    return render_template('donate.html')
 
 if __name__ == '__main__':
     freeze_support()
