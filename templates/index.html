@@ -56,17 +56,23 @@
             </div>
         </div>
     </div>
-
-    <a href="https://www.instagram.com/seattle.blues.dance.collective/" target="_blank" rel="noopener" class="instagram-link">
-        <img src="{{ url_for('static', filename='images/instagram-logo.png') }}" alt="Instagram">
-    </a>
 {% endblock %}
 
 {% block scripts %}
     <script>
         // Wrap initialization in an async function
         async function initialize() {
-            const events = await fetch('/events.json').then(response => response.json());
+
+            // Current date handling
+            let currentDate = getSeattleDate(); // Use current date instead of hardcoded value
+            let currentMonth = currentDate.getMonth();
+            let currentYear = currentDate.getFullYear();
+            
+            const params = new URLSearchParams({
+                month: currentMonth+1, // js 0ndx to py 1ndx
+                year: currentYear
+            });
+            let events = await fetch(`/events.json?${params}`).then(response => response.json());
             /* example:
             {
                 uid: "12345",
@@ -78,11 +84,6 @@
                 categories: ["Live Band", "Beginner Lesson"], // 'features' in filters
                 description: "Join us for an evening of blues dancing with live music and a beginner lesson at 7:30 PM."
             }*/
-
-            // Current date handling
-            let currentDate = getSeattleDate(); // Use current date instead of hardcoded value
-            let currentMonth = currentDate.getMonth();
-            let currentYear = currentDate.getFullYear();
 
             // Filter state
             let activeFilters = {
@@ -119,7 +120,7 @@
 
                 // Check URL fragment after everything is rendered
                 renderPromise.then(() => {
-                    checkUrlFragment();
+                    loadUrlFragment();
                 });
             }
 
@@ -219,11 +220,17 @@
             }
 
             // Render calendar
-            function renderCalendar() {
+            async function renderCalendar() {
+                // Make sure we have the current month's events
+                const params = new URLSearchParams({
+                    month: currentMonth+1, // js 0ndx to py 1ndx
+                    year: currentYear
+                });
+                events = await fetch(`/events.json?${params}`).then(response => response.json());
                 // Create first and last day in Seattle time
                 const firstDay = new Date(currentYear, currentMonth, 1);
                 firstDay.setHours(0, 0, 0, 0);
-                const lastDay = new Date(currentYear, currentMonth + 1, 0);
+                const lastDay = new Date(currentYear, currentMonth == 11 ? 0 : currentMonth + 1, 0);
                 lastDay.setHours(0, 0, 0, 0);
                 
                 const daysInMonth = lastDay.getDate();
@@ -911,7 +918,7 @@
             }
 
             // Function to check URL fragment and show corresponding event or date
-            function checkUrlFragment() {
+            function loadUrlFragment() {
                 const fragment = window.location.hash.slice(1); // Remove the # symbol
                 if (!fragment) return;
 
@@ -940,6 +947,11 @@
 
                 // Get the event date
                 const eventDate = createLocalDate(targetEvent.date);
+                
+                // Move the calendar
+                currentMonth = eventDate.getMonth();
+                currentYear = eventDate.getFullYear();
+                renderCalendar();
                 
                 // Get all events for this day
                 const dayEvents = events.filter(event => {
