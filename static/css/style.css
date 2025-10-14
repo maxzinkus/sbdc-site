@@ -724,49 +724,14 @@ html {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    color: var(--text-light);
-    font-size: 0.9rem;
     text-decoration: none;
     transition: var(--transition);
-    margin-top: 0.5rem;
 }
 
 .menu-social img {
     width: 4rem;
-    height: 4rem;
     object-fit: contain;
-}
-
-.instagram-link {
-    position: fixed;
-    top: calc(0rem + 36px); /* Consistent positioning across all viewport sizes */
-    right: 2rem;
-    z-index: 100;
-    transition: var(--transition);
-}
-
-.instagram-link img {
-    width: 5rem;
-    height: 5rem;
-    object-fit: contain;
-    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.4));
-    transition: var(--transition);
-}
-
-.instagram-link:hover img {
-    transform: translateY(-4px) scale(1.05);
-}
-
-@media (max-width: 768px) {
-    .instagram-link {
-        right: 1rem; /* Only adjust the right position for mobile */
-        padding: 0.4rem;
-    }
-
-    .instagram-link img {
-        width: 4rem;
-        height: 4rem;
-    }
+    max-inline-size: 2rem;
 }
 
 .menu-items {
