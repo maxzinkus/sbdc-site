@@ -1,13 +1,12 @@
 from datetime import datetime, date, timedelta, timezone
 from dateutil.relativedelta import relativedelta
-from functools import lru_cache
 from hashlib import sha256
 from html import escape
 from html.parser import HTMLParser
 import os
 import re
 import time
-from typing import List
+from typing import Tuple
 from zoneinfo import ZoneInfo
 
 import icalendar as ical
@@ -24,69 +23,47 @@ MAPS_API_KEY = os.getenv("MAPS_API_KEY")
 EVENTS_DB = {}
 NEIGHBORHOODS_DB = {}
 
-def refresh(logger=None):
+def refresh():
     global MAPS_API_KEY
     if not MAPS_API_KEY:
         MAPS_API_KEY = os.getenv("MAPS_API_KEY")
-    try:
-        if os.path.exists(CAL_FILE):
-            if logger:
-                logger.info("Calendar file exists")
-            if os.path.getmtime(CAL_FILE) > time.time() - CAL_CACHE_TTL_SECONDS:
-                if logger:
-                    logger.info("Using cached calendar file")
-                with open(CAL_FILE, "r") as f:
-                    return ical.Calendar.from_ical(f.read())
-            else:
-                if logger:
-                    logger.info("Calendar file is outdated; fetching new copy")
-        if logger:
-            logger.info("Fetching calendar from %s", CAL_URL)
+    if os.path.exists(CAL_FILE) and os.path.getmtime(CAL_FILE) > time.time() - CAL_CACHE_TTL_SECONDS:
+        with open(CAL_FILE, 'r') as f:
+            cal_data = f.read()
+    else:
         response = requests.get(CAL_URL)
-        if response.status_code == 200 and len(response.text) > 0 and len(response.text) < 1_048_576 * 4: # 4MiB
-            if logger:
-                logger.info("Successfully fetched calendar (%d bytes)", len(response.text))
-            with open(CAL_FILE, "w") as f:
-                f.write(response.text)
-            calendar = ical.Calendar.from_ical(response.text)
-            return calendar
-    except Exception as e:
-        if logger:
-            logger.error("Error fetching calendar: %s", e)
-    if logger:
-        logger.error("Failed to fetch calendar from %s", CAL_URL)
-    return None
+        if response.status_code == 200 and len(response.text) > 0 and len(response.text) < 1_048_576 * 64: # 64 MiB
+            cal_data = response.text
+            with open(CAL_FILE, 'w') as f:
+                f.write(cal_data)
+        else:
+            raise ValueError(f"Bad response from {CAL_URL}")
+    return ical.Calendar.from_ical(cal_data)
 
-def process_events(calendar: ical.Calendar, month: int, year: int, logger=None):
-    global EVENTS_DB
-    events = []
-    if calendar is None:
-        return events
+def read_events(calendar, month, year, logger=None):
     month_start = fix_datetime(datetime(year, month, 1)).replace(hour=0, minute=0, second=0, microsecond=0)
     month_end = fix_datetime(month_start + relativedelta(months=2)).replace(hour=0, minute=0, second=0, microsecond=0)
-    for cal_event in sorted(filter(lambda x: x.get("DTSTART"), recurring_ical_events.of(calendar).between(month_start, month_end)),
-                                   key=lambda x: fix_datetime(x["DTSTART"])):
-        event = {}
-        uid_val = cal_event.get("UID", str(cal_event)) + str(cal_event.get("RECURRENCE-ID", ""))
-        event["uid"] = sha256(str(uid_val).encode("utf-8")).hexdigest()
-        event["title"] = cal_event.get("SUMMARY", "")
+    return sorted(filter(lambda x: x.get("DTSTART"), recurring_ical_events.of(calendar).between(month_start, month_end)),
+                  key=lambda x: fix_datetime(x["DTSTART"]))
+
+def process_events(cal, month: int, year: int, do_cache=False, logger=None):
+    global EVENTS_DB
+    events = []
+    for cal_event in read_events(cal, month, year, logger):
+        uid_val = cal_event.get("UID", cal_event.get("SUMMARY", str(cal_event))) + str(cal_event.get("RECURRENCE-ID", ""))
+        uid = sha256(str(uid_val).encode("utf-8")).hexdigest()
         # already in cache
-        if EVENTS_DB.get(event["uid"]) and EVENTS_DB[event["uid"]]["title"] == event["title"]:
-            if EVENTS_DB[event["uid"]]["location"] and EVENTS_DB[event["uid"]]["neighborhood"] == "":
-                EVENTS_DB[event["uid"]]["neighborhood"] = get_neighborhood(EVENTS_DB[event["uid"]]["location"], logger)
-            events.append(EVENTS_DB[event["uid"]])
+        if EVENTS_DB.get(uid):
+            if EVENTS_DB[uid]["location"] and not EVENTS_DB[uid]["neighborhood"]:
+                EVENTS_DB[uid]["neighborhood"] = get_neighborhood(EVENTS_DB[uid]["location"], logger)
+            events.append(EVENTS_DB[uid])
             continue
+
+        event = {"uid": uid, "title": cal_event.get("SUMMARY", "")}
 
         # Parse the iCalendar date strings into datetime objects
-        dtstart = fix_datetime(cal_event.get("DTSTART"))
-        dtend = fix_datetime(cal_event.get("DTEND"))
-
-        local_start = fix_datetime(dtstart)
-        local_end = fix_datetime(dtend) if dtend else local_start
-        if local_start is None:
-            continue
-
-        event["dtstart"] = local_start
+        local_start = fix_datetime(cal_event["DTSTART"])
+        local_end = fix_datetime(cal_event.get("DTEND", local_start))
         event["date"] = local_start.strftime("%Y-%m-%d")
         try:
             cal_event.get("DTSTART").dt.time()
@@ -98,11 +75,9 @@ def process_events(calendar: ical.Calendar, month: int, year: int, logger=None):
                 event["time"] = start_time
         except AttributeError:
             event["time"] = "All Day"
+
         event["location"] = cal_event.get("LOCATION", "")
-        if not event["location"]:
-            event["neighborhood"] = ""
-        else:
-            event["neighborhood"] = get_neighborhood(event["location"], logger)
+        event["neighborhood"] = get_neighborhood(event["location"], logger)
 
         features = set()
         if ("live music" in str(cal_event.get("DESCRIPTION", "")).lower() or "live music" in str(cal_event.get("SUMMARY", "")).lower() or
@@ -131,9 +106,10 @@ def process_events(calendar: ical.Calendar, month: int, year: int, logger=None):
                 logger.error("HTML parsing error: %s", e)
             # If parsing fails, use the original description
             event["description"] = escape(description)
-        EVENTS_DB[event["uid"]] = event
+        if do_cache:
+            EVENTS_DB[uid] = event
         events.append(event)
-    return list(events)
+    return events
 
 def fix_datetime(vddd):
     if type(vddd) is ical.prop.vDDDTypes:
@@ -142,7 +118,6 @@ def fix_datetime(vddd):
         dt = vddd # either a date or a datetime
     if type(dt) is date:
         dt = datetime.combine(dt, datetime.min.time())
-        dt = dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
     if not dt.tzinfo:
         return dt.replace(tzinfo=timezone.utc).astimezone(ZoneInfo("America/Los_Angeles"))
     else:
@@ -150,9 +125,11 @@ def fix_datetime(vddd):
 
 def get_neighborhood(location: str, logger=None):
     global NEIGHBORHOODS_DB
+    if location == "":
+        return ""
     if NEIGHBORHOODS_DB.get(location):
         if logger:
-            logger.info("Using cached neighborhood for %s", location)
+            logger.debug(f"Using cached neighborhood for {location}")
         return NEIGHBORHOODS_DB[location]
     if not MAPS_API_KEY or not location:
         return ""
@@ -168,16 +145,11 @@ def get_neighborhood(location: str, logger=None):
                         return NEIGHBORHOODS_DB[location]
             except (KeyError, TypeError) as e:
                 if logger:
-                    logger.error("Failed to get neighborhood for %s: %s (%s)", location, data["status"], e)
-                return ""
+                    logger.error(f"Failed to get neighborhood for {location}: {data["status"]} ({e})")
         else:
             if logger:
-                logger.error("Failed to get neighborhood for %s: %s", location, data["status"])
+                logger.error(f"Failed to get neighborhood for {location}: {data["status"]} (unknown)")
     else:
         if logger:
-            logger.error("Failed to get neighborhood for %s: %s", location, response.text)
+            logger.error(f"Failed to get neighborhood for {location}: HTTP {response.status_code}")
     return ""
-
-if __name__ == "__main__":
-    calendar = refresh()
-    print("\n\n".join([str(event) for event in calendar.events]))
