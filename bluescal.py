@@ -124,6 +124,8 @@ def fix_datetime(vddd):
         return dt.astimezone(ZoneInfo("America/Los_Angeles"))
 
 def get_neighborhood(location: str, logger=None):
+    if os.getenv("BLUESCAL_GMAPS_ENABLE", "0") != "1":
+        return ""
     global NEIGHBORHOODS_DB
     if location == "":
         return ""
