@@ -78,6 +78,14 @@ def process_events(cal, month: int, year: int, do_cache=False, logger=None):
 
         event["location"] = cal_event.get("LOCATION", "")
         event["neighborhood"] = get_neighborhood(event["location"], logger)
+        if event["location"].startswith("Reverie Ballroom") or "Reverie Ballroom" in event["title"]:
+            event["venue"] = "Reverie Ballroom"
+        elif event["location"].startswith("Black & Tan Hall") or "Hillman City Sway" in event["title"]:
+            event["venue"] = "Black & Tan Hall"
+        elif event["location"].startswith("Lowdown Ballroom"):
+            event["venue"] = "Lowdown Ballroom"
+        elif event["location"].startswith("Dance Underground"):
+            event["venue"] = "Dance Underground"
 
         features = set()
         if ("live music" in str(cal_event.get("DESCRIPTION", "")).lower() or "live music" in str(cal_event.get("SUMMARY", "")).lower() or

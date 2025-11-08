@@ -1,4 +1,22 @@
 {% extends 'base.html' %}
+{% block head %}
+    <!-- Basic Meta TODO: conditional on URL w/ event data
+    <title>Your Page Title</title>
+    <meta name="description" content="A short summary of your page content.">
+    -->
+
+    <!-- Open Graph (used by Discord, Facebook, Instagram, etc.)
+    <meta property="og:title" content="Your Website Title Here">
+    <meta property="og:description" content="A short description that shows in link previews.">
+    <meta property="og:image" content="https://yourwebsite.com/path/to/preview-image.jpg">
+    <meta property="og:url" content="https://yourwebsite.com/page-url">
+    <meta property="og:type" content="website">
+    -->
+
+    <!-- Optional: more detailed Open Graph -->
+    <meta property="og:site_name" content="Seattle Blues Dance Collective">
+    <meta property="og:locale" content="en_US">
+{% endblock %}
 {% block content %}
     <div class="container">
         <div class="filters collapsed">
@@ -78,6 +96,7 @@
                 time: "7:00 PM - 11:00 PM",
                 location: "<some address>",
                 neighborhood: "Capitol Hill",
+                venue: 'Reverie Ballroom', // optional field
                 categories: ["Live Band", "Beginner Lesson"], // 'features' in filters
                 description: "Join us for an evening of blues dancing with live music and a beginner lesson at 7:30 PM."
             }*/
@@ -155,7 +174,7 @@
                         (activeFilters.time === "Evenings" && isEvening);
 
                     const matchesLocation = activeFilters.location === "All Locations" || 
-                        event.neighborhood === activeFilters.location;
+                        event.neighborhood === activeFilters.location || ('venue' in event && event.venue === activeFilters.location);
 
                     // Check if event is within time range if specified
                     const withinTimeRange = !timeRange || 
@@ -298,6 +317,9 @@
                 events.forEach(event => {
                     if (event.neighborhood != "") {
                         locations.add(event.neighborhood);
+                    }
+                    if ('venue' in event && event.venue != "") {
+                        locations.add(event.venue);
                     }
                 });
                 return Array.from(locations).sort();
