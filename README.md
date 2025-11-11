@@ -29,4 +29,4 @@ And navigate to [http://localhost:5000](http://localhost:5000) in your browser.
 - Instagram logo from [ClipArtCraft(CC)](https://clipartcraft.com)
 - Instructor images owned by each respective instructor, used with permission
 
-Max Zinkus, 2025 All Rights Reserved (for now)
+Alexandra Zinkus, 2025 All Rights Reserved (for now)
