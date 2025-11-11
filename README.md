@@ -21,12 +21,11 @@ Then to run the web app under Flask locally:
 $ python app.py
 ```
 
-And navigate to [http://localhost:5000](http://localhost:5000) in your browser.
+And navigate to [http://localhost:5000](http://localhost:8080) in your browser.
 
 ### Licenses
 
 - Logo image owned by [Lila Faria](https://www.lilaffaria.com), used with permission
-- Instagram logo from [ClipArtCraft(CC)](https://clipartcraft.com)
 - Instructor images owned by each respective instructor, used with permission
 
 Alexandra Zinkus, 2025 All Rights Reserved (for now)
