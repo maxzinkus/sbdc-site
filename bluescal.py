@@ -24,6 +24,11 @@ EVENTS_DB = {}
 NEIGHBORHOODS_DB = {}
 
 def refresh():
+    """ refreshes every 15mins (900s)
+        if an error occurs, retries in 1min
+        if refreshed in the last TTL sec, use the local file, else fetch
+        steady state: refreshing from server every 15min, parsing & caching on-demand
+    """
     global MAPS_API_KEY
     if not MAPS_API_KEY:
         MAPS_API_KEY = os.getenv("MAPS_API_KEY")
